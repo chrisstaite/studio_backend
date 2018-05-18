@@ -79,9 +79,11 @@ class Mixer(object):
         """
         if self._output is not None:
             self._output[1].set_input(None)
+            self._output[1].stop()
             self._output = None
         if name is not None:
             output = audio.output_device.OutputDevice(name, settings.BLOCK_SIZE)
+            self._output[1].start()
             output.set_input(self._mixer)
             self._output = (name, output)
 
