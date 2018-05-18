@@ -152,7 +152,7 @@ class Mixers(flask_restful.Resource):
         Mixers._mixers[mixer_id] = Mixer(
             settings.BLOCK_SIZE, args['channels']
         )
-        return mixer_id
+        return mixer_id, 201
 
 
 class MixerInputs(flask_restful.Resource):
@@ -170,7 +170,15 @@ class MixerInputs(flask_restful.Resource):
     def post(self, mixer_id):
         mixer = Mixers.get_mixer(mixer_id)
         args = self._parser.parse_args()
-        return mixer.add_live_input(args['name'])
+        return mixer.add_live_input(args['name']), 201
+
+
+class MixerInput(flask_restful.Resource):
+
+    def delete(self, mixer_id, input_id):
+        mixer = Mixers.get_mixer(mixer_id)
+        mixer.remove_input(input_id)
+        return "", 204
 
 
 class MixerOutput(flask_restful.Resource):
@@ -189,3 +197,4 @@ class MixerOutput(flask_restful.Resource):
         mixer = Mixers.get_mixer(mixer_id)
         args = self._parser.parse_args()
         mixer.set_output(args['name'])
+        return "", 201

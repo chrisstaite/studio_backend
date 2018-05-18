@@ -21,6 +21,7 @@ class Server(object):
         api.add_resource(rest.audio_input.InputDevice, '/audio/input')
         api.add_resource(rest.audio_mix.Mixers, '/audio/mixers')
         api.add_resource(rest.audio_mix.MixerInputs, '/audio/mixers/<string:mixer_id>/inputs')
+        api.add_resource(rest.audio_mix.MixerInput, '/audio/mixers/<string:mixer_id>/inputs/<string:input_id>')
         api.add_resource(rest.audio_mix.MixerOutput, '/audio/mixers/<string:mixer_id>/output')
 
     def start(self):
