@@ -1,9 +1,13 @@
 import sounddevice
 import sys
-from . import input
+import numpy
+from . import callback
 
 
-class InputDevice(input.Input):
+class InputDevice(callback.Callback):
+    """
+    A wrapper around audio input hardware to allow it to be played into the system
+    """
 
     def __init__(self, name, block_size):
         """
@@ -16,11 +20,12 @@ class InputDevice(input.Input):
         self._channels = device_details['max_input_channels']
         if self._channels <= 0:
             raise Exception('Not an input device')
-        self._stream = sounddevice.RawInputStream(
+        self._stream = sounddevice.InputStream(
             blocksize=block_size,
             channels=self._channels,
             device=name,
-            callback=self._callback
+            callback=self._callback,
+            dtype=numpy.int16
         )
         self._last_frames = None
         self._last_time = None
@@ -51,7 +56,7 @@ class InputDevice(input.Input):
             print(status, file=sys.stderr)
         self._last_frames = frames
         self._last_time = time
-        self.notify_callbacks(in_data)
+        self.notify_callbacks(in_data.reshape(in_data.shape[0] * in_data.shape[1]))
 
     @staticmethod
     def devices():
@@ -59,8 +64,5 @@ class InputDevice(input.Input):
         List the available input devices
         :return:  A list of device names to pass into the constructor
         """
-        device_list = []
-        for device in sounddevice.query_devices():
-            if device['max_input_channels'] > 0:
-                device_list.append(device['name'])
-        return device_list
+        devices = sounddevice.query_devices()
+        return [device['name'] for device in devices if device['max_input_channels'] > 0]

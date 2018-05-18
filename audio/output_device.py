@@ -2,9 +2,13 @@ import sounddevice
 import sys
 import numpy
 import queue
+from . import callback
 
 
-class OutputDevice(object):
+class OutputDevice(callback.Callback):
+    """
+    A wrapper around an output device which plays samples to external audio hardware
+    """
 
     def __init__(self, name, block_size):
         """
@@ -12,18 +16,20 @@ class OutputDevice(object):
         :param name:  The name of the output device to use
         :param block_size:  The number of blocks to use for each channel
         """
+        super().__init__()
         device_details = sounddevice.query_devices(name)
         self._channels = device_details['max_output_channels']
         if self._channels <= 0:
             raise Exception('Not an output device')
-        self._stream = sounddevice.RawOutputStream(
+        self._stream = sounddevice.OutputStream(
             blocksize=block_size,
             channels=self._channels,
             device=name,
-            callback=self._output_callback
+            callback=self._output_callback,
+            dtype=numpy.int16
         )
-        self._input = None
         self._block_size = self._channels * block_size
+        self._input = None
         # We'll drop frames if we're processing slower than this
         self._output_queue = queue.Queue(maxsize=16)
 
@@ -77,16 +83,16 @@ class OutputDevice(object):
         """
         if status:
             print(status, file=sys.stderr)
+        frames *= self._channels
         try:
-            data = self._output_queue.get_nowait()
+            data = numpy.zeros(0, numpy.int16)
+            while len(data) < frames:
+                data = numpy.append(data, self._output_queue.get_nowait())
         except queue.Empty:
-            print("Buffer underflow, padding with empty", file=sys.stderr)
-            data = numpy.zeros(self._block_size, numpy.float)
-        if len(out_data) > len(data):
-            out_data[:len(data)] = data
-            out_data[len(data):] = b'\x00' * (len(out_data) - len(data))
-        else:
-            out_data[:] = data
+            data = numpy.append(data, numpy.zeros(frames - len(data), numpy.int16))
+        out_data[:] = data.reshape(len(data) // self._channels, self._channels, order='C')
+        # Notify listeners that a tick has tuck
+        self.notify_callbacks()
 
     @staticmethod
     def devices():
@@ -94,8 +100,5 @@ class OutputDevice(object):
         List the available output devices
         :return:  A list of device names to pass into the constructor
         """
-        device_list = []
-        for device in sounddevice.query_devices():
-            if device['max_output_channels'] > 0:
-                device_list.append(device['name'])
-        return device_list
+        devices = sounddevice.query_devices()
+        return [device['name'] for device in devices if device['max_output_channels'] > 0]

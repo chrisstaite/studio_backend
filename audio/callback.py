@@ -1,7 +1,13 @@
 
-class Input(object):
+class Callback(object):
+    """
+    The basic super class to manage callbacks
+    """
 
     def __init__(self):
+        """
+        Initialise the input with no callbacks
+        """
         self._callbacks = []
 
     def add_callback(self, callback):
@@ -18,10 +24,9 @@ class Input(object):
         """
         self._callbacks.remove(callback)
 
-    def notify_callbacks(self, blocks):
+    def notify_callbacks(self, *args, **kwargs):
         """
         Notify the callbacks that are registered of a new input block
-        :param blocks:  The blocks to notify the callback with
         """
         for callback in self._callbacks:
-            callback(self, blocks)
+            callback(self, *args, **kwargs)

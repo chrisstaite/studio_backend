@@ -2,6 +2,9 @@ import numpy
 
 
 class Meter(object):
+    """
+    A sound meter that uses listens to an input and determines the peaks
+    """
 
     def __init__(self):
         """
