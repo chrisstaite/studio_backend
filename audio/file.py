@@ -38,6 +38,20 @@ class File(callback.Callback):
         self._playing = True
         threading.Thread(target=self._play_thread, daemon=True).start()
 
+    def time(self):
+        """
+        Get the number of seconds into the track we have played
+        :return:  The number of seconds played as a float
+        """
+        return self._time
+
+    def length(self):
+        """
+        Get the number of seconds the track is long
+        :return:  The number of seconds in the track as a float
+        """
+        return self._file.duration
+
     def stop(self):
         """
         Stop the file from playing
