@@ -37,12 +37,18 @@ class InputDevice(callback.Callback):
         """
         return self._channels
 
-    def __enter__(self):
+    def start(self):
         self._stream.start()
+
+    def stop(self):
+        self._stream.stop()
+
+    def __enter__(self):
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._stream.stop()
+        self.stop()
 
     def _callback(self, in_data, frames, time, status):
         """

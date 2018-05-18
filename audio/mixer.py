@@ -51,14 +51,24 @@ class Mixer(callback.Callback):
         :param source:  The input to remove from the mix
         """
         source.remove_callback(self._input_callback)
+        self._input_lock.acquire()
+        del self._inputs[source]
+        self._input_lock.release()
 
     def set_volume(self, source, volume):
         """
         Set the volume of the given source
         :param source:  The source to set the volume of
-        :param volume:  A volume to set it to between 0.0 and 1.0
+        :param volume:  A volume to set it to between 0.0 and 2.0
+        :raises ValueError:  If volume is not between 0 and 2
+        :raises KeyError:  If the source is not in this mixer
         """
+        volume = float(volume)
+        if volume < 0.0 or volume > 2.0:
+            raise ValueError("Volume must be between 0 and 2")
+        self._input_lock.acquire()
         self._inputs[source].volume = volume
+        self._input_lock.release()
 
     def _map_channels(self, blocks, channels):
         """
@@ -67,13 +77,13 @@ class Mixer(callback.Callback):
         :param channels:  The number of channels in the block
         :return:  The blocks mapped to the number of channels in this mixer
         """
-        separate_channels = blocks.reshape(channels, len(blocks) // channels, order='FORTRAN')
+        separate_channels = blocks.reshape(channels, len(blocks) // channels)
         if self._channels > channels:
             # Mix-up to more channels
             separate_channels = [
                 separate_channels[i % len(separate_channels)] for i in range(self._channels)
             ]
-            return numpy.ravel(numpy.vstack(separate_channels), order='F')
+            return numpy.ravel(numpy.vstack(separate_channels))
         else:
             # Mix-down to fewer channels
             scale = self._channels / channels
@@ -100,7 +110,7 @@ class Mixer(callback.Callback):
         self._input_lock.acquire()
         try:
             this_input = self._inputs[source]
-        except:
+        except KeyError:
             self._input_lock.release()
             raise
 
