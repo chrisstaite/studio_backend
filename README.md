@@ -29,7 +29,8 @@ You can set up an environment to run the software by installing Python 3 and run
 ```
 python3 -m virtualenv venv
 curl https://bootstrap.pypa.io/get-pip.py | venv/bin/python3
-venv/bin/pip install -r requirements.txt
+venv/bin/pip3 install -r requirements.txt
+venv/bin/python3 -m nodeenv -p
 venv/bin/python3 server.py
 ```
 
