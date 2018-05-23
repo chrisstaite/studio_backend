@@ -67,7 +67,7 @@ class Server(object):
         """
         Handle the homepage
         """
-        return flask.redirect('/frontend')
+        return flask.redirect('/frontend/')
 
     def start(self):
         """
@@ -77,5 +77,4 @@ class Server(object):
 
 
 if __name__ == "__main__":
-    server = Server()
-    server.start()
+    Server().start()

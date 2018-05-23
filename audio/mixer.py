@@ -32,6 +32,13 @@ class Mixer(callback.Callback):
         # Initialise the current block
         self._tick()
 
+    def channels(self):
+        """
+        Get the number of output channels for this mixer
+        :return:  The number of output channels
+        """
+        return self._channels
+
     def add_input(self, source):
         """
         Add an input to the mixer
@@ -101,11 +108,12 @@ class Mixer(callback.Callback):
         self._current_sample = numpy.zeros(self._block_size, numpy.int16)
         return completed_sample
 
-    def _input_callback(self, source, blocks):
+    def _get_input(self, source):
         """
-        Take an input block
-        :param source:  The input that the block came from
-        :param blocks:  The input data from the input
+        Get the Input instance for the given source, calling _tick if we've seen it before
+        :param source:  The source to get the input for
+        :return:  The Input instance
+        :raises KeyError:  If the source is not mapped for this multiplexer
         """
         self._input_lock.acquire()
         try:
@@ -127,6 +135,16 @@ class Mixer(callback.Callback):
         else:
             this_input.has_input = True
             self._input_lock.release()
+
+        return this_input
+
+    def _input_callback(self, source, blocks):
+        """
+        Take an input block
+        :param source:  The input that the block came from
+        :param blocks:  The input data from the input
+        """
+        this_input = self._get_input(source)
 
         if this_input.channels != self._channels:
             # Need to re-sample the channels

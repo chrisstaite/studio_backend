@@ -75,7 +75,6 @@ class OutputDevice(callback.Callback):
         try:
             self._output_queue.put_nowait(blocks)
         except queue.Full:
-            print("Dropping output buffer as it is full", file=sys.stderr)
             self._output_queue.get_nowait()
             self._output_queue.put_nowait(blocks)
 
@@ -96,7 +95,7 @@ class OutputDevice(callback.Callback):
                 data = numpy.append(data, self._output_queue.get_nowait())
         except queue.Empty:
             data = numpy.append(data, numpy.zeros(frames - len(data), numpy.int16))
-        out_data[:] = data.reshape(len(data) // self._channels, self._channels, order='C')
+        out_data[:] = numpy.reshape(data, (-1, self._channels))
         # Notify listeners that a tick has tuck
         self.notify_callbacks()
 

@@ -62,7 +62,7 @@ class InputDevice(callback.Callback):
             print(status, file=sys.stderr)
         self._last_frames = frames
         self._last_time = time
-        self.notify_callbacks(in_data.reshape(in_data.shape[0] * in_data.shape[1]))
+        self.notify_callbacks(numpy.ravel(in_data))
 
     @staticmethod
     def devices():
