@@ -3,3 +3,4 @@ from . import input_device
 from . import output_device
 from . import mixer
 from . import multiplex
+from . import mp3

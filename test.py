@@ -2,8 +2,6 @@ import time
 import audio
 
 block_size = 1024
-soundflower = audio.output_device.OutputDevice('Soundflower (64ch)', block_size)
-multiplexer = audio.multiplex.Multiplex(soundflower.channels(), block_size)
 speaker = audio.output_device.OutputDevice('Built-in Output', block_size)
 filename = '/Users/chris/Music/iTunes/iTunes Media/Music/Men at Work/The Best of Eighties/23 Down Under.mp3'
 file = audio.file.File(filename, block_size)
@@ -11,13 +9,13 @@ mic = audio.input_device.InputDevice('Built-in Microphone', block_size)
 mixer = audio.mixer.Mixer(block_size, 2)
 mixer.add_input(file)
 mixer.set_volume(file, 0.1)
-#mixer.add_input(mic)
-#mixer.set_volume(mic, 1.0)
-multiplexer.add_input(mic, 0)
-multiplexer.add_input(mixer, 2)
-with speaker, mic, soundflower:
+mixer.add_input(mic)
+mixer.set_volume(mic, 1.0)
+encoder = audio.mp3.Mp3()
+with speaker, mic, open('test.mp3', 'wb') as f:
     #speaker.set_input(mixer)
-    soundflower.set_input(multiplexer)
+    encoder.add_callback(lambda s, b: f.write(b))
+    encoder.set_input(mixer)
     file.play()
     try:
         while True:
@@ -26,3 +24,4 @@ with speaker, mic, soundflower:
         file.stop()
         mixer.remove_input(file)
         #speaker.set_input(None)
+        encoder.set_input(None)

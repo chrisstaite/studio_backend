@@ -21,6 +21,7 @@ class File(callback.Callback):
         self._blocks = blocks * self._file.channels
         self._playing = False
         self._time = 0.0
+        self._end_callback = None
 
     def channels(self):
         """
@@ -58,6 +59,13 @@ class File(callback.Callback):
         """
         self._playing = False
 
+    def set_end_callback(self, end_callback):
+        """
+        Set a callback for when the file finishes playing
+        :param end_callback:  The callback to call
+        """
+        self._end_callback = end_callback
+
     def _play_thread(self):
         """
         The loop that plays the sound from start to end, queueing raw PCM blocks
@@ -91,3 +99,6 @@ class File(callback.Callback):
                     time.sleep(sleep_time)
                 self.notify_callbacks(raw_block[:self._blocks])
                 raw_block = raw_block[self._blocks:]
+        self._playing = False
+        if self._end_callback is not None:
+            self._end_callback()
