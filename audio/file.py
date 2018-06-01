@@ -18,6 +18,7 @@ class File(callback.Callback):
         """
         super().__init__()
         self._file = audioread.audio_open(path)
+        self._blocks_sent = 0
         self._blocks = blocks * self._file.channels
         self._playing = False
         self._time = 0.0
@@ -76,11 +77,9 @@ class File(callback.Callback):
         start_time = time.time()
         # This is how many blocks we should have passed per second
         blocks_per_second = self._file.samplerate * self._file.channels
-        # This is how many blocks we have currently passed
-        blocks_sent = 0
+        # Calculate the starting time
+        start_time -= self._blocks_sent / blocks_per_second
         for block in self._file:
-            if not self._playing:
-                return
             # Add the newly read blocks to the existing ones,
             # sorting out the interlacing of the channels
             raw_block = numpy.append(
@@ -89,9 +88,9 @@ class File(callback.Callback):
             )
             while len(raw_block) >= self._blocks and self._playing:
                 # Add the number of blocks we're about to pass to find out when we should
-                blocks_sent += self._blocks
+                self._blocks_sent += self._blocks
                 # Re-calculate the time we should be at
-                self._time = blocks_sent / blocks_per_second
+                self._time = self._blocks_sent / blocks_per_second
                 # Find the difference between the time we should be at and the current time
                 sleep_time = self._time - (time.time() - start_time)
                 # If there is a difference and it's in the future, wait for then
@@ -99,6 +98,8 @@ class File(callback.Callback):
                     time.sleep(sleep_time)
                 self.notify_callbacks(raw_block[:self._blocks])
                 raw_block = raw_block[self._blocks:]
+            if not self._playing:
+                break
         self._playing = False
         if self._end_callback is not None:
             self._end_callback()
