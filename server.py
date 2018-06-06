@@ -28,6 +28,7 @@ class Server(object):
         api.add_resource(rest.audio_mix.MixerInputs, '/audio/mixers/<string:mixer_id>/inputs')
         api.add_resource(rest.audio_mix.MixerInput, '/audio/mixers/<string:mixer_id>/inputs/<string:input_id>')
         api.add_resource(rest.audio_mix.MixerOutput, '/audio/mixers/<string:mixer_id>/output')
+        api.add_resource(rest.stream_sink.StreamSink, '/audio/output_stream/<string:name>')
 
     def _setup_angular(self):
         """
