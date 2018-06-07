@@ -24,7 +24,7 @@ class Mp3(callback.Callback):
         Set the input for this output
         :param source:  The input to set or None to clear
         """
-        if self._input == source:
+        if self._input is source:
             return
         if self._input is not None:
             self._input.remove_callback(self._input_callback)

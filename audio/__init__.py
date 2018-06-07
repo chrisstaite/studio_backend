@@ -5,3 +5,4 @@ from . import mixer
 from . import multiplex
 from . import mp3
 from . import playlist
+from . import icecast
