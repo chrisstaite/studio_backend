@@ -78,3 +78,8 @@ import 'zone.js/dist/zone';  // Included with Angular CLI.
 /***************************************************************************************************
  * APPLICATION IMPORTS
  */
+
+import 'hammerjs';
+
+// Fix up global variable for Socket.IO
+(window as any).global = window;

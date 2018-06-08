@@ -1,0 +1,14 @@
+.output-list {
+  position: relative;
+  height: 200px;
+}
+
+.output-list mat-card {
+  max-width: 200px;
+}
+
+.output-list .add-button {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+}
