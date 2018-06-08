@@ -1,10 +1,12 @@
 import flask
 import flask_restful
+import flask_socketio
 import subprocess
 import sys
 import os.path
 import functools
 import rest
+import uuid
 
 
 class Server(object):
@@ -14,8 +16,16 @@ class Server(object):
         Construct the Flask instance and configure the REST API
         """
         self._app = flask.Flask(__name__)
+        self._app.config['SECRET_KEY'] = str(uuid.uuid4())
+        self._socketio = flask_socketio.SocketIO(self._app)
         self._setup_rest()
+        self._setup_socketio()
         self._setup_angular()
+
+    def _setup_socketio(self):
+        """
+        Setup the SocketIO event handlers
+        """
 
     def _setup_rest(self):
         """
@@ -42,7 +52,7 @@ class Server(object):
         # Install the required packages
         subprocess.call([npm, 'install'], cwd=frontend)
         # Run the build
-        subprocess.call([node, ng, 'build', '--aot'])
+        subprocess.call([node, ng, 'build', '--aot', '--base-href', '/frontend/'], cwd=frontend)
         # Serve the built directory
         dist = os.path.join(frontend, 'dist', 'frontend')
         self._app.add_url_rule(
@@ -74,7 +84,7 @@ class Server(object):
         """
         Start the server running
         """
-        self._app.run()
+        self._socketio.run(self._app)
 
 
 if __name__ == "__main__":
