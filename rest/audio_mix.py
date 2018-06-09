@@ -195,6 +195,6 @@ class MixerOutput(flask_restful.Resource):
 
     def post(self, mixer_id):
         mixer = Mixers.get_mixer(mixer_id)
-        args = self._parser.parse_args()
+        args = self._parser.parse_args(strict=True)
         mixer.set_output(args['name'])
         return "", 201

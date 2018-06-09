@@ -20,8 +20,13 @@ class Icecast(object):
         self._output.add_callback(self._enqueue)
         self._socket = None
         self._source = None
+        self._endpoint = None
         # Icecast doesn't actually support chunked encoding
         self._chunk = False
+
+    @property
+    def endpoint(self):
+        return self._endpoint
 
     @staticmethod
     def _socket_connect(endpoint):
@@ -98,8 +103,12 @@ class Icecast(object):
         :param password:  The password to authenticate with
         :return:  True if the server is now accepting the stream, False if it fails
         """
+        self._endpoint = endpoint
         endpoint = urllib.parse.urlparse(endpoint)
-        connection = self._socket_connect(endpoint)
+        try:
+            connection = self._socket_connect(endpoint)
+        except ConnectionRefusedError:
+            return False
         self._authenticate(connection, endpoint, 'source', password)
         result = self._expect_100(connection)
         if result:

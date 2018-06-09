@@ -33,7 +33,8 @@ class Server(object):
         Add all of the resources to the server
         """
         api = flask_restful.Api(self._app)
-        api.add_resource(rest.audio_output.OutputDevice, '/audio/output')
+        api.add_resource(rest.audio_output.CreatedOutputs, '/audio/output')
+        api.add_resource(rest.audio_output.OutputDevice, '/audio/output/devices')
         api.add_resource(rest.audio_input.InputDevice, '/audio/input')
         api.add_resource(rest.audio_mix.Mixers, '/audio/mixers')
         api.add_resource(rest.audio_mix.MixerInputs, '/audio/mixers/<string:mixer_id>/inputs')
@@ -54,7 +55,14 @@ class Server(object):
         subprocess.call([npm, 'install'], cwd=frontend)
         # Run the build and allow it to watch for changes
         self._angular = subprocess.Popen(
-            [node, ng, 'build', '--aot', '--base-href', '/frontend/', '--watch'], cwd=frontend
+            [
+                node, ng, 'build',
+                '--aot',
+                '--base-href', '/frontend/',
+                '--watch',
+                # '--prod', '--configuration', 'production'
+            ],
+            cwd=frontend
         )
         # Serve the built directory
         dist = os.path.join(frontend, 'dist', 'frontend')

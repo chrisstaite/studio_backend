@@ -1,14 +1,21 @@
 .output-list {
   position: relative;
-  height: 200px;
+  overflow-x: auto;
+  min-height: 200px;
+  padding-bottom: 20px;
 }
 
 .output-list mat-card {
-  max-width: 200px;
+  float: left;
+  margin-right: 20px;
 }
 
 .output-list .add-button {
   position: absolute;
   right: 5px;
-  bottom: 5px;
+  bottom: 10px;
+}
+
+mat-card-actions button {
+  float: right;
 }

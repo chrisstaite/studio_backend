@@ -48,3 +48,4 @@ The current implementation has the following functionality implemented in the ba
  - Streaming to an Icecast server as an output
  - MP3 stream over the REST API as an output
  - Hosting an Angular server
+ - Adding outputs in the UI

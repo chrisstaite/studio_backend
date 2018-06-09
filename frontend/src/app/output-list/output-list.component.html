@@ -1,9 +1,27 @@
 <div class="output-list">
   <h1>Outputs</h1>
   <mat-card *ngFor="let output of outputs">
-
+    <mat-card-title *ngIf="output.type == 'device'">Output device</mat-card-title>
+    <mat-card-title *ngIf="output.type == 'icecast'">Icecast source</mat-card-title>
+    <mat-card-title *ngIf="output.type == 'multiplex'">Multiplexed output</mat-card-title>
+    <mat-card-content>
+      <mat-form-field>
+        <input matInput placeholder="Name" [value]="output.display_name" />
+      </mat-form-field>
+    </mat-card-content>
+    <mat-card-content *ngIf="output.type == 'device'">{{ output.parameters['name'] }}</mat-card-content>
+    <mat-card-content *ngIf="output.type == 'icecast'">{{ output.parameters['endpoint'] }}</mat-card-content>
+    <mat-card-actions>
+      <button mat-mini-fab
+              matTooltip="Remove this device" matTooltipPosition="before"
+              (click)="removeOutput(output)">
+        <mat-icon>remove</mat-icon>
+      </button>
+    </mat-card-actions>
   </mat-card>
-  <button mat-mini-fab class="add-button">
+  <button mat-mini-fab class="add-button"
+          matTooltip="Add an output device" matTooltipPosition="before"
+          (click)="newOutput()">
     <mat-icon>add</mat-icon>
   </button>
 </div>

@@ -1,0 +1,78 @@
+<mat-accordion>
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Output Device
+      </mat-panel-title>
+      <mat-panel-description>
+        Add a physical output device
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <mat-select #output_device placeholder="Output device">
+        <mat-option *ngFor="let device of devices" [value]="device">
+          {{ device }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-mini-fab
+            matTooltip="Create the output device" matTooltipPosition="after"
+            (click)="newOutputDevice(output_device.value)">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-expansion-panel>
+  <mat-expansion-panel *ngIf="available_devices.length > 0">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Multiplexer
+      </mat-panel-title>
+      <mat-panel-description>
+        Make pseudo devices for a multi channel output device
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <mat-select #multiplex_device placeholder="Output device">
+        <mat-option *ngFor="let device of available_devices" [value]="device.id">
+          {{ device.display_name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <input #mutliplex_channels matInput placeholder="Channels (e.g. 1 - mono, 2 - stereo)">
+    </mat-form-field>
+
+    <button mat-mini-fab
+            matTooltip="Create the multiplexer outputs" matTooltipPosition="after"
+            (click)="newMultiplex(multiplex_device.value, mutliplex_channels.value)">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-expansion-panel>
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Icecast server
+      </mat-panel-title>
+      <mat-panel-description>
+        Create an Icecast stream
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <input #icecast_endpoint matInput placeholder="Icecast server and mount point">
+    </mat-form-field>
+
+    <mat-form-field>
+      <input #icecast_password matInput placeholder="Source password">
+    </mat-form-field>
+
+    <button mat-mini-fab
+            matTooltip="Create the Icecast output" matTooltipPosition="after"
+            (click)="newIcecast(icecast_endpoint.value, icecast_password.value)">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-expansion-panel>
+</mat-accordion>

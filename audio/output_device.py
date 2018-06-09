@@ -32,6 +32,15 @@ class OutputDevice(callback.Callback):
         self._input = None
         # We'll drop frames if we're processing slower than this
         self._output_queue = queue.Queue(maxsize=16)
+        self._name = name
+
+    @property
+    def name(self):
+        """
+        Get the name of the output device
+        :return:  The name of the output device
+        """
+        return self._name
 
     def set_input(self, source):
         """
