@@ -32,6 +32,7 @@ class Mixer(callback.Callback):
         # Initialise the current block
         self._tick()
 
+    @property
     def channels(self):
         """
         Get the number of output channels for this mixer
@@ -48,7 +49,7 @@ class Mixer(callback.Callback):
         if source in self._inputs:
             self._input_lock.release()
             raise Exception("Unable to add inputs multiple times")
-        self._inputs[source] = Input(source.channels(), False, 0.5)
+        self._inputs[source] = Input(source.channels, False, 0.5)
         self._input_lock.release()
         source.add_callback(self._input_callback)
 

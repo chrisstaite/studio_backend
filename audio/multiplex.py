@@ -32,6 +32,7 @@ class Multiplex(callback.Callback):
         # Initialise the current block
         self._tick()
 
+    @property
     def channels(self):
         """
         Get the number of output channels for this multiplexer
@@ -45,7 +46,7 @@ class Multiplex(callback.Callback):
         :param source:  The device to input from
         :param start_channel:  The channel to play the input to on the output
         """
-        channels = source.channels()
+        channels = source.channels
         if start_channel < 0 or start_channel + channels >= self._channels:
             raise Exception("Start channel out of the range for the output device")
         for input_device in self._inputs.values():

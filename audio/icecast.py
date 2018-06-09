@@ -25,6 +25,12 @@ class Icecast(object):
         self._chunk = False
 
     @property
+    def channels(self):
+        if self._source is None:
+            return 0
+        return self._source.channels
+
+    @property
     def endpoint(self):
         return self._endpoint
 
@@ -114,7 +120,7 @@ class Icecast(object):
         if result:
             self._socket = connection
             if self._source is not None:
-                self._output.set_input(self._source)
+                self._output.input = self._source
         return result
 
     def _enqueue(self, source, blocks):
@@ -131,7 +137,12 @@ class Icecast(object):
             else:
                 sock.send(blocks)
 
-    def set_input(self, source):
+    @property
+    def input(self):
+        return self._source
+
+    @input.setter
+    def input(self, source):
         """
         Set the audio source to upload
         :param source:  The source
@@ -140,7 +151,7 @@ class Icecast(object):
             return
         self._source = source
         if self._socket is not None:
-            self._output.set_input(source)
+            self._output.input = source
 
     def close(self):
         """
@@ -148,7 +159,7 @@ class Icecast(object):
         """
         self._output.remove_callback(self._enqueue)
         if self._source is not None:
-            self._output.set_input(None)
+            self._output.input = None
         if self._socket is not None:
             if self._chunk:
                 self._socket.send(b'0\r\n\r\n')

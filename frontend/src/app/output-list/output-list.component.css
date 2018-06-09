@@ -1,19 +1,23 @@
 .output-list {
   position: relative;
-  overflow-x: auto;
   min-height: 200px;
   padding-bottom: 20px;
-}
-
-.output-list mat-card {
-  float: left;
-  margin-right: 20px;
 }
 
 .output-list .add-button {
   position: absolute;
   right: 5px;
   bottom: 10px;
+}
+
+.card-list {
+  overflow-x: scroll;
+  white-space: nowrap;
+}
+
+.card-list mat-card {
+  display: inline-block;
+  margin: 10px;
 }
 
 mat-card-actions button {

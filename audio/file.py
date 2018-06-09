@@ -24,6 +24,7 @@ class File(callback.Callback):
         self._time = 0.0
         self._end_callback = None
 
+    @property
     def channels(self):
         """
         Get the number of channels in this file

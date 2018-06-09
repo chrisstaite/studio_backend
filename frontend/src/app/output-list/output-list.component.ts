@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {MatDialog, MatDialogRef, MAT_DIALOG_DATA} from '@angular/material';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import * as io from 'socket.io-client';
 
 class Output {
@@ -53,6 +53,12 @@ export class OutputListComponent implements OnInit {
   }
 
   removeOutput(output: Output): void {
+    this.http.delete('/audio/output/' + output.id).subscribe(() => {
+      let index = this.outputs.indexOf(output, 0);
+      if (index > -1) {
+         this.outputs.splice(index, 1);
+      }
+    });
   }
 
 }

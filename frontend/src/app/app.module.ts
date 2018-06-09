@@ -11,7 +11,8 @@ import {
   MatDialogModule,
   MatExpansionModule,
   MatInputModule,
-  MatSelectModule
+  MatSelectModule,
+  MatGridListModule
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
@@ -41,7 +42,8 @@ import { MixerListComponent } from './mixer-list/mixer-list.component';
     MatDialogModule,
     MatExpansionModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    MatGridListModule
   ],
   providers: [],
   bootstrap: [AppComponent]

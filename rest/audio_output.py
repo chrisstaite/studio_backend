@@ -22,6 +22,7 @@ class MultiplexedOutput(object):
         self._offset = offset
         self._source = None
 
+    @property
     def channels(self):
         return self._channels
 
@@ -29,7 +30,12 @@ class MultiplexedOutput(object):
     def parent(self):
         return self._parent
 
-    def set_input(self, source):
+    @property
+    def input(self):
+        return self._source
+
+    @input.setter
+    def input(self, source):
         """
         Set the input for this output
         :param source:  The source to set as the input
@@ -99,6 +105,8 @@ class CreatedOutputs(flask_restful.Resource):
             elif isinstance(output.output, MultiplexedOutput):
                 ret['type'] = 'multiplex'
                 ret['parent_id'] = next(x.id for x in self._outputs if x.output is output.output.parent)
+            else:
+                ret['type'] = 'browser'
             return ret
         return [to_dict(output) for output in outputs]
 
@@ -136,18 +144,18 @@ class CreatedOutputs(flask_restful.Resource):
         :returns:  The newly created outputs
         """
         try:
-            parent = next(output.output for output in self._outputs if output.id == parent_id)
-        except StopIteration:
+            parent = self.get_output(parent_id)
+        except werkzeug.exceptions.NotFound:
             raise werkzeug.exceptions.BadRequest('Parent output does not exist.')
-        if not isinstance(parent, audio.output_device.OutputDevice):
+        if not isinstance(parent.output, audio.output_device.OutputDevice):
             raise werkzeug.exceptions.BadRequest('Parent must be an output device')
-        parent_channels = parent.channels()
+        parent_channels = parent.output.channels
         if parent_channels < (channels * 2):
             raise werkzeug.exceptions.BadRequest('Parent device only has {} channels'.format(parent_channels))
         multiplex = audio.multiplex.Multiplex(parent_channels, settings.BLOCK_SIZE)
-        parent.set_input(multiplex)
+        parent.output.input = multiplex
         return [
-            MultiplexedOutput(parent, multiplex, channels, i * channels)
+            MultiplexedOutput(parent.output, multiplex, channels, i * channels)
             for i in range(parent_channels // channels)
         ]
 
@@ -162,14 +170,71 @@ class CreatedOutputs(flask_restful.Resource):
         output_device = type_function(**type_args)
         outputs = []
         if isinstance(output_device, list):
-            i = 0
+            i = 1
             for device in output_device:
-                output = self.Output(str(uuid.uuid4()), args['display_name'] + ' - ' + str(i), device)
+                output = self.add_output(args['display_name'] + ' - ' + str(i), device)
                 i += 1
-                self._outputs.append(output)
                 outputs.append(output)
         else:
-            output = self.Output(str(uuid.uuid4()), args['display_name'], output_device)
-            self._outputs.append(output)
+            output = self.add_output(args['display_name'], output_device)
             outputs.append(output)
         return self._to_json(outputs)
+
+    @classmethod
+    def add_output(cls, display_name, output):
+        output = cls.Output(str(uuid.uuid4()), display_name, output)
+        cls._outputs.append(output)
+        return output
+
+    @classmethod
+    def get_output(cls, output):
+        """
+        Get the Output class for the given output
+        :param output:  The output or output ID
+        :return:  The found Output instance
+        :raises werkzeug.exceptions.NotFound:  The device is not found
+        """
+        try:
+            return next(x for x in cls._outputs if x.output is output or x.id == output)
+        except StopIteration:
+            raise werkzeug.exceptions.NotFound('No such device found')
+
+    @classmethod
+    def delete_output(cls, output):
+        """
+        Delete an output
+        :param output:  The output to delete
+        :raises werkzeug.exceptions.BadRequest:  The output is in use
+        :raises werkzeug.exceptions.NotFound:  The output doesn't exist
+        """
+        if output.output.input is not None:
+            raise werkzeug.exceptions.BadRequest('Output in use')
+        try:
+            cls._outputs.remove(output)
+        except ValueError:
+            raise werkzeug.exceptions.NotFound('No such device found')
+        # If all the multiplexers are removed, then remove the multiplex device
+        if isinstance(output.output, MultiplexedOutput):
+            if not any(x.output.parent == output.output.parent
+                       for x in cls._outputs if isinstance(x.output, MultiplexedOutput)):
+                output.output.parent.input = None
+
+
+class Output(flask_restful.Resource):
+
+    def __init__(self):
+        self._parser = flask_restful.reqparse.RequestParser()
+        self._parser.add_argument(
+            'display_name', type=str, help='The name to call this output'
+        )
+
+    def put(self, output_id):
+        output = CreatedOutputs.get_output(output_id)
+        args = self._parser.parse_args(strict=True)
+        if 'display_name' in args:
+            output.display_name = args['display_name']
+
+    def delete(self, output_id):
+        output = CreatedOutputs.get_output(output_id)
+        CreatedOutputs.delete_output(output)
+        return True

@@ -13,9 +13,9 @@ mixer.add_input(mic)
 mixer.set_volume(mic, 1.0)
 encoder = audio.mp3.Mp3()
 with speaker, mic, open('test.mp3', 'wb') as f:
-    #speaker.set_input(mixer)
+    #speaker.input = mixer
     encoder.add_callback(lambda s, b: f.write(b))
-    encoder.set_input(mixer)
+    encoder.input = mixer
     file.play()
     try:
         while True:
@@ -23,5 +23,5 @@ with speaker, mic, open('test.mp3', 'wb') as f:
     finally:
         file.stop()
         mixer.remove_input(file)
-        #speaker.set_input(None)
-        encoder.set_input(None)
+        #speaker.input = None
+        encoder.input = None

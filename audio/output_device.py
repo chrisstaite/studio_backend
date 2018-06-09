@@ -42,12 +42,17 @@ class OutputDevice(callback.Callback):
         """
         return self._name
 
-    def set_input(self, source):
+    @property
+    def input(self):
+        return self._input
+
+    @input.setter
+    def input(self, source):
         """
         Set the input for this output
         :param source:  The input to set or None to clear
         """
-        if self._input == source:
+        if self._input is source:
             return
         if self._input is not None:
             self._input.remove_callback(self._input_callback)
@@ -55,6 +60,7 @@ class OutputDevice(callback.Callback):
         if self._input is not None:
             self._input.add_callback(self._input_callback)
 
+    @property
     def channels(self):
         """
         Get the number of channels

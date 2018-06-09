@@ -19,7 +19,12 @@ class Mp3(callback.Callback):
         self._quality = quality
         self._bit_rate = bit_rate
 
-    def set_input(self, source):
+    @property
+    def input(self):
+        return self._input
+
+    @input.setter
+    def input(self, source):
         """
         Set the input for this output
         :param source:  The input to set or None to clear
@@ -35,7 +40,7 @@ class Mp3(callback.Callback):
         if source is not None:
             try:
                 self._encoder = lameenc.Encoder()
-                self._encoder.set_channels(source.channels())
+                self._encoder.set_channels(source.channels)
                 self._encoder.set_quality(self._quality)
                 self._encoder.set_bit_rate(self._bit_rate)
             except:

@@ -34,6 +34,7 @@ class Server(object):
         """
         api = flask_restful.Api(self._app)
         api.add_resource(rest.audio_output.CreatedOutputs, '/audio/output')
+        api.add_resource(rest.audio_output.Output, '/audio/output/<string:output_id>')
         api.add_resource(rest.audio_output.OutputDevice, '/audio/output/devices')
         api.add_resource(rest.audio_input.InputDevice, '/audio/input')
         api.add_resource(rest.audio_mix.Mixers, '/audio/mixers')

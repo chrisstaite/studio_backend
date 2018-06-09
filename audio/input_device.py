@@ -16,6 +16,7 @@ class InputDevice(callback.Callback):
         :param block_size:  The size of each sample block
         """
         super().__init__()
+        self._name = name
         device_details = sounddevice.query_devices(name)
         self._channels = device_details['max_input_channels']
         if self._channels <= 0:
@@ -30,6 +31,11 @@ class InputDevice(callback.Callback):
         self._last_frames = None
         self._last_time = None
 
+    @property
+    def name(self):
+        return self._name
+
+    @property
     def channels(self):
         """
         Get the number of channels

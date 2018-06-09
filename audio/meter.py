@@ -14,7 +14,12 @@ class Meter(object):
         self._current_peak = 0
         self._source = None
 
-    def set_source(self, source):
+    @property
+    def input(self):
+        return self._source
+
+    @input.setter
+    def input(self, source):
         """
         Set the current source of the meter
         :param source:  The source or None to clear the source

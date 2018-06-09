@@ -2,6 +2,7 @@ import flask
 import flask_restful
 import audio
 import queue
+from . import audio_output
 
 
 class Mp3Generator(object):
@@ -15,10 +16,18 @@ class Mp3Generator(object):
         :param name:  The name of the output to create
         """
         # Low quality, 64kbit MP3 output for speed
-        # TODO: Add to list of available outputs
         self._output = audio.mp3.Mp3(7, 64)
         self._output.add_callback(self._enqueue)
         self._queue = queue.Queue(maxsize=16)
+        audio_output.CreatedOutputs.add_output(name, self._output)
+
+    @property
+    def input(self):
+        return self._output.input
+
+    @input.setter
+    def input(self, source):
+        self._output.input = source
 
     def _enqueue(self, source, blocks):
         """
@@ -36,8 +45,13 @@ class Mp3Generator(object):
         """
         Stop generating MP3 output because the stream has stopped
         """
+        self._output.input = None
         self._output.remove_callback(self._enqueue)
-        # TODO: Remove from list of available outputs
+        try:
+            output = audio_output.CreatedOutputs.get_output(self._output)
+            audio_output.CreatedOutputs.delete_output(output)
+        except:
+            pass
 
     def __iter__(self):
         """
