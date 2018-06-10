@@ -12,7 +12,7 @@ mixer.set_volume(file, 0.1)
 mixer.add_input(mic)
 mixer.set_volume(mic, 1.0)
 encoder = audio.mp3.Mp3()
-with speaker, mic, open('test.mp3', 'wb') as f:
+with open('test.mp3', 'wb') as f:
     #speaker.input = mixer
     encoder.add_callback(lambda s, b: f.write(b))
     encoder.input = mixer

@@ -7,6 +7,8 @@ import os.path
 import functools
 import rest
 import uuid
+import eventlet
+eventlet.monkey_patch(socket=True)
 
 
 class Server(object):
@@ -17,7 +19,7 @@ class Server(object):
         """
         self._app = flask.Flask(__name__)
         self._app.config['SECRET_KEY'] = str(uuid.uuid4())
-        self._socketio = flask_socketio.SocketIO(self._app)
+        self._socketio = flask_socketio.SocketIO(self._app, async_mode='eventlet')
         self._angular = None
         self._setup_rest()
         self._setup_socketio()
@@ -33,15 +35,13 @@ class Server(object):
         Add all of the resources to the server
         """
         api = flask_restful.Api(self._app)
-        api.add_resource(rest.audio_output.CreatedOutputs, '/audio/output')
-        api.add_resource(rest.audio_output.Output, '/audio/output/<string:output_id>')
-        api.add_resource(rest.audio_output.OutputDevice, '/audio/output/devices')
-        api.add_resource(rest.audio_input.InputDevice, '/audio/input')
+        rest.audio_output.setup_api(api)
+        rest.audio_input.setup_api(api)
+        rest.stream_sink.setup_api(api)
         api.add_resource(rest.audio_mix.Mixers, '/audio/mixers')
         api.add_resource(rest.audio_mix.MixerInputs, '/audio/mixers/<string:mixer_id>/inputs')
         api.add_resource(rest.audio_mix.MixerInput, '/audio/mixers/<string:mixer_id>/inputs/<string:input_id>')
         api.add_resource(rest.audio_mix.MixerOutput, '/audio/mixers/<string:mixer_id>/output')
-        api.add_resource(rest.stream_sink.StreamSink, '/audio/output_stream/<string:name>')
 
     def _setup_angular(self):
         """

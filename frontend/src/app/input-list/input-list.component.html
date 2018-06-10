@@ -1,3 +1,26 @@
-<p>
-  input-list works!
-</p>
+<div class="input-list">
+  <h1>Inputs</h1>
+  <div class="card-list">
+    <mat-card *ngFor="let input of inputs">
+      <mat-card-title *ngIf="input.type == 'device'">Input device</mat-card-title>
+      <mat-card-content>
+        <mat-form-field>
+          <input matInput placeholder="Name" [value]="input.display_name" />
+        </mat-form-field>
+      </mat-card-content>
+      <mat-card-content *ngIf="input.type == 'device'">{{ input.parameters['name'] }}</mat-card-content>
+      <mat-card-actions>
+        <button mat-mini-fab
+                matTooltip="Remove this device" matTooltipPosition="before"
+                (click)="removeInput(input)">
+          <mat-icon>remove</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+  <button mat-mini-fab class="add-button"
+          matTooltip="Add an input device" matTooltipPosition="before"
+          (click)="newInput()">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>

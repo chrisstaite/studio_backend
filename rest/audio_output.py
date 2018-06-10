@@ -2,57 +2,19 @@ import werkzeug.exceptions
 import flask_restful
 import flask_restful.reqparse
 import audio
-import uuid
-import collections
 import settings
+import audio_manager
+from . import stream_sink
 
 
 class OutputDevice(flask_restful.Resource):
 
-    def get(self):
+    @staticmethod
+    def get():
         return audio.output_device.OutputDevice.devices()
 
 
-class MultiplexedOutput(object):
-
-    def __init__(self, parent, multiplex, channels, offset):
-        self._parent = parent
-        self._multiplex = multiplex
-        self._channels = channels
-        self._offset = offset
-        self._source = None
-
-    @property
-    def channels(self):
-        return self._channels
-
-    @property
-    def parent(self):
-        return self._parent
-
-    @property
-    def input(self):
-        return self._source
-
-    @input.setter
-    def input(self, source):
-        """
-        Set the input for this output
-        :param source:  The source to set as the input
-        """
-        if source is self._source:
-            return
-        if self._source is not None:
-            self._multiplex.remove_input(self._source)
-            self._source = None
-        self._multiplex.add_input(source, self._offset)
-        self._source = source
-
-
 class CreatedOutputs(flask_restful.Resource):
-
-    Output = collections.namedtuple('Output', ['id', 'display_name', 'output'])
-    _outputs = []
 
     def __init__(self):
         self._parser = flask_restful.reqparse.RequestParser()
@@ -83,9 +45,10 @@ class CreatedOutputs(flask_restful.Resource):
         )
 
     def get(self):
-        return self._to_json(self._outputs)
+        return self._to_json(audio_manager.output.Outputs.get())
 
-    def _to_json(self, outputs):
+    @staticmethod
+    def _to_json(outputs):
         """
         Take a list of Output objects and prepare them for jsonification
         :param outputs:  List of Output instances
@@ -102,41 +65,48 @@ class CreatedOutputs(flask_restful.Resource):
             elif isinstance(output.output, audio.icecast.Icecast):
                 ret['type'] = 'icecast'
                 ret['endpoint'] = output.output.endpoint
-            elif isinstance(output.output, MultiplexedOutput):
+            elif isinstance(output.output, audio_manager.output.MultiplexedOutput):
                 ret['type'] = 'multiplex'
-                ret['parent_id'] = next(x.id for x in self._outputs if x.output is output.output.parent)
-            else:
+                ret['parent_id'] = audio_manager.output.Outputs.get_output(output.output.parent).id
+            elif isinstance(output.output, stream_sink.Mp3Generator):
                 ret['type'] = 'browser'
             return ret
         return [to_dict(output) for output in outputs]
 
-    def _create_device(self, name):
+    @staticmethod
+    def _create_device(name):
         """
         Create a new output device
         :param name:  The name of the output device to create
         :return:  The newly created output device
         """
-        if any(isinstance(output.output, audio.output_device.OutputDevice) and output.output.name == name
-                for output in self._outputs):
-            raise werkzeug.exceptions.BadRequest('An output of that name already exists.')
+        try:
+            audio_manager.output.Outputs.get_output_device(name)
+            raise werkzeug.exceptions.BadRequest('An output for that device already exists.')
+        except ValueError:
+            pass
         return audio.output_device.OutputDevice(name, settings.BLOCK_SIZE)
 
-    def _create_icecast(self, endpoint, password):
+    @staticmethod
+    def _create_icecast(endpoint, password):
         """
         Create a new Icecast output device
         :param endpoint:  The Icecast endpoint to connect to
         :param password:  The source password for the Icecast endpoint
         :return:  The newly created output
         """
-        if any(isinstance(output.output, audio.icecast.Icecast) and output.output.endpoint == endpoint
-                for output in self._outputs):
+        try:
+            audio_manager.output.Outputs.get_icecast_output(endpoint)
             raise werkzeug.exceptions.BadRequest('An output to that Icecast endpoint already exists.')
+        except ValueError:
+            pass
         icecast = audio.icecast.Icecast()
         if not icecast.connect(endpoint, password):
             raise werkzeug.exceptions.BadRequest('Unable to connect to Icecast endpoint')
         return icecast
 
-    def _create_multiplex(self, parent_id, channels):
+    @staticmethod
+    def _create_multiplex(parent_id, channels):
         """
         Create a new multiplex output device
         :param parent_id:     The parent device to output to
@@ -144,8 +114,8 @@ class CreatedOutputs(flask_restful.Resource):
         :returns:  The newly created outputs
         """
         try:
-            parent = self.get_output(parent_id)
-        except werkzeug.exceptions.NotFound:
+            parent = audio_manager.output.Outputs.get_output(parent_id)
+        except ValueError:
             raise werkzeug.exceptions.BadRequest('Parent output does not exist.')
         if not isinstance(parent.output, audio.output_device.OutputDevice):
             raise werkzeug.exceptions.BadRequest('Parent must be an output device')
@@ -155,7 +125,7 @@ class CreatedOutputs(flask_restful.Resource):
         multiplex = audio.multiplex.Multiplex(parent_channels, settings.BLOCK_SIZE)
         parent.output.input = multiplex
         return [
-            MultiplexedOutput(parent.output, multiplex, channels, i * channels)
+            audio_manager.output.MultiplexedOutput(parent.output, multiplex, channels, i * channels)
             for i in range(parent_channels // channels)
         ]
 
@@ -172,52 +142,13 @@ class CreatedOutputs(flask_restful.Resource):
         if isinstance(output_device, list):
             i = 1
             for device in output_device:
-                output = self.add_output(args['display_name'] + ' - ' + str(i), device)
+                output = audio_manager.output.Outputs.add_output(args['display_name'] + ' - ' + str(i), device)
                 i += 1
                 outputs.append(output)
         else:
-            output = self.add_output(args['display_name'], output_device)
+            output = audio_manager.output.Outputs.add_output(args['display_name'], output_device)
             outputs.append(output)
         return self._to_json(outputs)
-
-    @classmethod
-    def add_output(cls, display_name, output):
-        output = cls.Output(str(uuid.uuid4()), display_name, output)
-        cls._outputs.append(output)
-        return output
-
-    @classmethod
-    def get_output(cls, output):
-        """
-        Get the Output class for the given output
-        :param output:  The output or output ID
-        :return:  The found Output instance
-        :raises werkzeug.exceptions.NotFound:  The device is not found
-        """
-        try:
-            return next(x for x in cls._outputs if x.output is output or x.id == output)
-        except StopIteration:
-            raise werkzeug.exceptions.NotFound('No such device found')
-
-    @classmethod
-    def delete_output(cls, output):
-        """
-        Delete an output
-        :param output:  The output to delete
-        :raises werkzeug.exceptions.BadRequest:  The output is in use
-        :raises werkzeug.exceptions.NotFound:  The output doesn't exist
-        """
-        if output.output.input is not None:
-            raise werkzeug.exceptions.BadRequest('Output in use')
-        try:
-            cls._outputs.remove(output)
-        except ValueError:
-            raise werkzeug.exceptions.NotFound('No such device found')
-        # If all the multiplexers are removed, then remove the multiplex device
-        if isinstance(output.output, MultiplexedOutput):
-            if not any(x.output.parent == output.output.parent
-                       for x in cls._outputs if isinstance(x.output, MultiplexedOutput)):
-                output.output.parent.input = None
 
 
 class Output(flask_restful.Resource):
@@ -229,12 +160,31 @@ class Output(flask_restful.Resource):
         )
 
     def put(self, output_id):
-        output = CreatedOutputs.get_output(output_id)
+        try:
+            output = audio_manager.output.Outputs.get_output(output_id)
+        except ValueError:
+            raise werkzeug.exceptions.NotFound('No such output exists')
         args = self._parser.parse_args(strict=True)
         if 'display_name' in args:
             output.display_name = args['display_name']
 
-    def delete(self, output_id):
-        output = CreatedOutputs.get_output(output_id)
-        CreatedOutputs.delete_output(output)
+    @staticmethod
+    def delete(output_id):
+        try:
+            output = audio_manager.output.Outputs.get_output(output_id)
+            audio_manager.output.Outputs.delete_output(output)
+        except ValueError:
+            raise werkzeug.exceptions.NotFound('No such output exists')
+        except audio_manager.exception.InUseException:
+            raise werkzeug.exceptions.BadRequest('Output is in use')
         return True
+
+
+def setup_api(api):
+    """
+    Configure the REST endpoints for this namespace
+    :param flask_restful.Api api:  The API to add the endpoints to
+    """
+    api.add_resource(CreatedOutputs, '/audio/output')
+    api.add_resource(Output, '/audio/output/<string:output_id>')
+    api.add_resource(OutputDevice, '/audio/output/devices')

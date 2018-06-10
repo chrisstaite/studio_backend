@@ -16,7 +16,7 @@ import {
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
-import { InputListComponent } from './input-list/input-list.component';
+import { InputListComponent, NewInputDialog } from './input-list/input-list.component';
 import { OutputListComponent, NewOutputDialog } from './output-list/output-list.component';
 import { MixerListComponent } from './mixer-list/mixer-list.component';
 
@@ -24,11 +24,13 @@ import { MixerListComponent } from './mixer-list/mixer-list.component';
   declarations: [
     AppComponent,
     InputListComponent,
+    NewInputDialog,
     OutputListComponent,
     NewOutputDialog,
     MixerListComponent
   ],
   entryComponents: [
+    NewInputDialog,
     NewOutputDialog
   ],
   imports: [

@@ -33,6 +33,7 @@ class OutputDevice(callback.Callback):
         # We'll drop frames if we're processing slower than this
         self._output_queue = queue.Queue(maxsize=16)
         self._name = name
+        self._started = False
 
     @property
     def name(self):
@@ -44,6 +45,10 @@ class OutputDevice(callback.Callback):
 
     @property
     def input(self):
+        """
+        Get the current input source for this output
+        :return:  The input source
+        """
         return self._input
 
     @input.setter
@@ -58,7 +63,13 @@ class OutputDevice(callback.Callback):
             self._input.remove_callback(self._input_callback)
         self._input = source
         if self._input is not None:
+            if not self._started:
+                self._started = True
+                self._stream.start()
             self._input.add_callback(self._input_callback)
+        elif self._started:
+            self._started = False
+            self._stream.stop()
 
     @property
     def channels(self):
@@ -67,19 +78,6 @@ class OutputDevice(callback.Callback):
         :return:  The number of channels for this input
         """
         return self._channels
-
-    def start(self):
-        self._stream.start()
-
-    def stop(self):
-        self._stream.stop()
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
 
     def _input_callback(self, source, blocks):
         """

@@ -30,9 +30,42 @@ class InputDevice(callback.Callback):
         )
         self._last_frames = None
         self._last_time = None
+        self._started = False
+
+    def add_callback(self, cb):
+        """
+        Add a callback to this input device
+        :param cb:  The callback to add
+        """
+        super().add_callback(cb)
+        self._check_state()
+
+    def remove_callback(self, cb):
+        """
+        Remove a callback from this input device
+        :param cb:  The callback to remove
+        """
+        super().add_callback(cb)
+        self._check_state()
+
+    def _check_state(self):
+        """
+        Check that we are started or stopped if we need to
+        """
+        required_state = self.has_callbacks()
+        if required_state != self._started:
+            if required_state:
+                self._stream.start()
+            else:
+                self._stream.stop()
+            self._started = required_state
 
     @property
     def name(self):
+        """
+        Get the name of the input device
+        :return:  The input device name
+        """
         return self._name
 
     @property
@@ -42,19 +75,6 @@ class InputDevice(callback.Callback):
         :return:  The number of channels for this input
         """
         return self._channels
-
-    def start(self):
-        self._stream.start()
-
-    def stop(self):
-        self._stream.stop()
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop()
 
     def _callback(self, in_data, frames, time, status):
         """

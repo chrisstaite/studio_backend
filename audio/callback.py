@@ -30,3 +30,10 @@ class Callback(object):
         """
         for callback in self._callbacks:
             callback(self, *args, **kwargs)
+
+    def has_callbacks(self):
+        """
+        Whether there are currently any callbacks for this instance
+        :return:  True if there are callbacks, False if not
+        """
+        return len(self._callbacks) > 0

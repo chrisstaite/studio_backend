@@ -1,0 +1,26 @@
+<mat-accordion>
+  <mat-expansion-panel expanded="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Input Device
+      </mat-panel-title>
+      <mat-panel-description>
+        Add a physical input device
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <mat-select #input_device placeholder="Input device">
+        <mat-option *ngFor="let device of devices" [value]="device">
+          {{ device }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-mini-fab
+            matTooltip="Create the input device" matTooltipPosition="after"
+            (click)="newInputDevice(input_device.value)">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-expansion-panel>
+</mat-accordion>
