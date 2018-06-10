@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import flask
 import flask_restful
 import flask_socketio
@@ -7,8 +9,6 @@ import os.path
 import functools
 import rest
 import uuid
-import eventlet
-eventlet.monkey_patch(socket=True)
 
 
 class Server(object):
