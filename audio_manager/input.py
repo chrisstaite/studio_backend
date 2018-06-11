@@ -14,21 +14,21 @@ class Inputs(object):
         return cls._inputs
 
     @classmethod
-    def add_input(cls, display_name, input):
-        output = cls.Input(str(uuid.uuid4()), display_name, input)
-        cls._inputs.append(output)
-        return output
+    def add_input(cls, display_name, input_):
+        input_ = cls.Input(str(uuid.uuid4()), display_name, input_)
+        cls._inputs.append(input_)
+        return input_
 
     @classmethod
-    def get_input(cls, input):
+    def get_input(cls, input_):
         """
         Get the Input class for the given input
-        :param input:  The input or input ID
+        :param input_:  The input or input ID
         :return:  The found Input instance
         :raises ValueError:  The device is not found
         """
         try:
-            return next(x for x in cls._inputs if x.input is input or x.id == input)
+            return next(x for x in cls._inputs if x.input is input_ or x.id == input_)
         except StopIteration:
             raise ValueError('No such device found')
 

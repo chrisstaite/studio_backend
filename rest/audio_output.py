@@ -1,4 +1,3 @@
-import werkzeug.exceptions
 import flask_restful
 import flask_restful.reqparse
 import audio
@@ -82,7 +81,7 @@ class CreatedOutputs(flask_restful.Resource):
         """
         try:
             audio_manager.output.Outputs.get_output_device(name)
-            raise werkzeug.exceptions.BadRequest('An output for that device already exists.')
+            flask_restful.abort(400, message='An output for that device already exists.')
         except ValueError:
             pass
         return audio.output_device.OutputDevice(name, settings.BLOCK_SIZE)
@@ -97,12 +96,12 @@ class CreatedOutputs(flask_restful.Resource):
         """
         try:
             audio_manager.output.Outputs.get_icecast_output(endpoint)
-            raise werkzeug.exceptions.BadRequest('An output to that Icecast endpoint already exists.')
+            flask_restful.abort(400, message='An output to that Icecast endpoint already exists.')
         except ValueError:
             pass
         icecast = audio.icecast.Icecast()
         if not icecast.connect(endpoint, password):
-            raise werkzeug.exceptions.BadRequest('Unable to connect to Icecast endpoint')
+            flask_restful.abort(400, message='Unable to connect to Icecast endpoint')
         return icecast
 
     @staticmethod
@@ -116,12 +115,13 @@ class CreatedOutputs(flask_restful.Resource):
         try:
             parent = audio_manager.output.Outputs.get_output(parent_id)
         except ValueError:
-            raise werkzeug.exceptions.BadRequest('Parent output does not exist.')
+            flask_restful.abort(400, message='Parent output does not exist.')
+            raise  # No-op
         if not isinstance(parent.output, audio.output_device.OutputDevice):
-            raise werkzeug.exceptions.BadRequest('Parent must be an output device')
+            flask_restful.abort(400, message='Parent must be an output device')
         parent_channels = parent.output.channels
         if parent_channels < (channels * 2):
-            raise werkzeug.exceptions.BadRequest('Parent device only has {} channels'.format(parent_channels))
+            flask_restful.abort(400, message='Parent device only has {} channels'.format(parent_channels))
         multiplex = audio.multiplex.Multiplex(parent_channels, settings.BLOCK_SIZE)
         parent.output.input = multiplex
         return [
@@ -163,7 +163,8 @@ class Output(flask_restful.Resource):
         try:
             output = audio_manager.output.Outputs.get_output(output_id)
         except ValueError:
-            raise werkzeug.exceptions.NotFound('No such output exists')
+            flask_restful.abort(404, message='No such output exists')
+            raise  # No-op
         args = self._parser.parse_args(strict=True)
         if 'display_name' in args:
             output.display_name = args['display_name']
@@ -174,9 +175,9 @@ class Output(flask_restful.Resource):
             output = audio_manager.output.Outputs.get_output(output_id)
             audio_manager.output.Outputs.delete_output(output)
         except ValueError:
-            raise werkzeug.exceptions.NotFound('No such output exists')
+            flask_restful.abort(404, message='No such output exists')
         except audio_manager.exception.InUseException:
-            raise werkzeug.exceptions.BadRequest('Output is in use')
+            flask_restful.abort(400, message='Output is in use')
         return True
 
 

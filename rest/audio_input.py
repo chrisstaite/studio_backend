@@ -1,4 +1,3 @@
-import werkzeug.exceptions
 import flask_restful
 import flask_restful.reqparse
 import audio
@@ -59,7 +58,7 @@ class CreatedInputs(flask_restful.Resource):
         """
         try:
             audio_manager.input.Inputs.get_input_device(name)
-            raise werkzeug.exceptions.BadRequest('An input for that device already exists.')
+            flask_restful.abort(400, message='An input for that device already exists.')
         except ValueError:
             pass
         return audio.input_device.InputDevice(name, settings.BLOCK_SIZE)
@@ -89,7 +88,8 @@ class Input(flask_restful.Resource):
         try:
             input_ = audio_manager.input.Inputs.get_input(input_id)
         except ValueError:
-            raise werkzeug.exceptions.NotFound('No such input exists')
+            flask_restful.abort(404, message='No such input exists')
+            raise  # No-op
         args = self._parser.parse_args(strict=True)
         if 'display_name' in args:
             input_.display_name = args['display_name']
@@ -100,9 +100,9 @@ class Input(flask_restful.Resource):
             input_ = audio_manager.input.Inputs.get_input(input_id)
             audio_manager.input.Inputs.delete_input(input_)
         except ValueError:
-            raise werkzeug.exceptions.NotFound('No such input exists')
+            flask_restful.abort(404, message='No such input exists')
         except audio_manager.exception.InUseException:
-            raise werkzeug.exceptions.BadRequest('Input is in use')
+            flask_restful.abort(400, message='Input is in use')
         return True
 
 
