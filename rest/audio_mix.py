@@ -109,28 +109,6 @@ class MixerChannel(flask_restful.Resource):
         except ValueError:
             flask_restful.abort(404, message='No such mixer exists')
 
-    @staticmethod
-    def _get_input(input_id):
-        """
-        Get an input for a given input ID
-        :param input_id:  The ID of the input to find
-        :return:  The input for the given ID
-        """
-        # An empty ID means set it to nothing
-        if input_id == '':
-            return None
-        # Look for a device input first
-        try:
-            return audio_manager.input.Inputs.get_input(input_id).input
-        except ValueError:
-            pass
-        # Look for another mixer next
-        try:
-            audio_manager.mixer.Mixers.get_mixer(input_id).mixer
-        except ValueError:
-            flask_restful.abort(400, message='Input with the given ID does not exist')
-        # TODO: Add a playlist source lookup
-
     def put(self, mixer_id, index):
         mixer = self._get_mixer(mixer_id)
         try:
@@ -142,7 +120,11 @@ class MixerChannel(flask_restful.Resource):
         if 'volume' in args:
             channel.volume = args['volume']
         if 'input' in args:
-            new_input = self._get_input(args['input'])
+            try:
+                new_input = audio_manager.input.get_input(args['input'])
+            except ValueError:
+                flask_restful.abort(400, message='Input with the given ID does not exist')
+                raise  # No-op
             for i in range(mixer.mixer.get_channel_count()):
                 if index != i and mixer.mixer.get_channel(i).input is new_input:
                     flask_restful.abort(400, message='Source already assigned to a channel of this mixer')

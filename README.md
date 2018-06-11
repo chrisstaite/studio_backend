@@ -49,3 +49,4 @@ The current implementation has the following functionality implemented in the ba
  - MP3 stream over the REST API as an output
  - Hosting an Angular server
  - Adding outputs in the UI
+ - Adding inputs in the UI

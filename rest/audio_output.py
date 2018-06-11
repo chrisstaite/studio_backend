@@ -156,6 +156,9 @@ class Output(flask_restful.Resource):
     def __init__(self):
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
+            'input', type=str, help='The ID of the input to set to the output'
+        )
+        self._parser.add_argument(
             'display_name', type=str, help='The name to call this output'
         )
 
@@ -168,6 +171,11 @@ class Output(flask_restful.Resource):
         args = self._parser.parse_args(strict=True)
         if 'display_name' in args:
             output.display_name = args['display_name']
+        if 'input' in args:
+            try:
+                output.output.input = audio_manager.input.get_input(args['input'])
+            except ValueError:
+                flask_restful.abort(400, message='Input with the given ID does not exist')
 
     @staticmethod
     def delete(output_id):

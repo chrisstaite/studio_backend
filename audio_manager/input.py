@@ -2,6 +2,7 @@ import collections
 import uuid
 import audio
 from . import exception
+from . import mixer
 
 
 class Inputs(object):
@@ -58,3 +59,23 @@ class Inputs(object):
         if input_.input.has_callbacks():
             raise exception.InUseException('Input has current outputs')
         cls._inputs.remove(input_)
+
+
+def get_input(input_id):
+    """
+    Get an input for a given input ID
+    :param input_id:  The ID of the input to find
+    :return:  The input for the given ID or None if the input_id was empty
+    :raises ValueError:  No such input found
+    """
+    # An empty ID means set it to nothing
+    if input_id == '':
+        return None
+    # Look for a device input first
+    try:
+        return Inputs.get_input(input_id).input
+    except ValueError:
+        pass
+    # Look for another mixer next
+    return mixer.Mixers.get_mixer(input_id).mixer
+    # TODO: Add a playlist source lookup
