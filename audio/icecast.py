@@ -1,3 +1,4 @@
+import typing
 import socket
 import ssl
 import base64
@@ -10,7 +11,7 @@ class Icecast(object):
     A class that can sink to an Icecast server
     """
 
-    def __init__(self, quality=7, bitrate=64):
+    def __init__(self, quality: int = 7, bitrate: int = 64):
         """
         Create a new Icecast stream
         :param quality:  The MP3 encoding quality - 2 is best, 7 is fastest
@@ -25,17 +26,17 @@ class Icecast(object):
         self._chunk = False
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         if self._source is None:
             return 0
         return self._source.channels
 
     @property
-    def endpoint(self):
+    def endpoint(self) -> str:
         return self._endpoint
 
     @staticmethod
-    def _socket_connect(endpoint):
+    def _socket_connect(endpoint: urllib.parse.ParseResult) -> typing.Union[ssl.SSLSocket, socket.socket]:
         """
         Connect to the remote endpoint
         :param endpoint:  The Icecast endpoint to connect to
@@ -61,7 +62,10 @@ class Icecast(object):
         return connection
 
     @staticmethod
-    def _authenticate(connection, endpoint, username, password):
+    def _authenticate(connection: typing.Union[ssl.SSLSocket, socket.socket],
+                      endpoint: urllib.parse.ParseResult,
+                      username: str,
+                      password: str) -> None:
         """
         Send the PUT request to the given connection
         :param connection:  The connection to send the request to
@@ -88,7 +92,7 @@ class Icecast(object):
         connection.send('\r\n'.join(headers).encode('latin1'))
 
     @staticmethod
-    def _expect_100(connection):
+    def _expect_100(connection: typing.Union[ssl.SSLSocket, socket.socket]) -> bool:
         """
         Read the response headers from the connection
         :param connection:  The connection to expect a 100 response from
@@ -102,7 +106,7 @@ class Icecast(object):
         except IOError:
             return False
 
-    def connect(self, endpoint, password):
+    def connect(self, endpoint: str, password: str):
         """
         Connect to the Icecast endpoint
         :param endpoint:  The Icecast endpoint to connect to
@@ -123,10 +127,9 @@ class Icecast(object):
                 self._output.input = self._source
         return result
 
-    def _enqueue(self, source, blocks):
+    def _enqueue(self, _, blocks: bytes) -> None:
         """
         The handler for MP3 blocks to send to the server
-        :param source:  The input source (unused)
         :param blocks:  The data produced (the MP3)
         """
         sock = self._socket
@@ -142,7 +145,7 @@ class Icecast(object):
         return self._source
 
     @input.setter
-    def input(self, source):
+    def input(self, source) -> None:
         """
         Set the audio source to upload
         :param source:  The source
@@ -153,7 +156,7 @@ class Icecast(object):
         if self._socket is not None:
             self._output.input = source
 
-    def close(self):
+    def close(self) -> None:
         """
         Stop generating MP3 output because the stream has stopped
         """

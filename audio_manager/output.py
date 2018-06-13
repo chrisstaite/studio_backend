@@ -1,3 +1,4 @@
+import typing
 import collections
 import uuid
 import audio
@@ -5,8 +6,22 @@ from . import exception
 
 
 class MultiplexedOutput(object):
+    """
+    A class that wraps a multiplexer to allow each split in the multiplex to be managed as an output instance
+    """
 
-    def __init__(self, parent, multiplex, channels, offset):
+    def __init__(self,
+                 parent: audio.output_device.OutputDevice,
+                 multiplex: audio.multiplex.Multiplex,
+                 channels: int,
+                 offset: int):
+        """
+        Create a new wrapper around a multiplexer for managing a part of the multiplex as a single output
+        :param parent:  The output that the multiplexer outputs to
+        :param multiplex:  The multiplexer to use
+        :param channels:  The number of channels for this multiplexer output
+        :param offset:  The offset into the multiplexer that this instance is to manage
+        """
         self._parent = parent
         self._multiplex = multiplex
         self._channels = channels
@@ -14,19 +29,31 @@ class MultiplexedOutput(object):
         self._source = None
 
     @property
-    def channels(self):
+    def channels(self) -> int:
+        """
+        Get the number of channels that are managed by this instance
+        :return:  The number of channels
+        """
         return self._channels
 
     @property
-    def parent(self):
+    def parent(self) -> audio.output_device.OutputDevice:
+        """
+        Get the output device that the multiplexer outputs to
+        :return:  The output device
+        """
         return self._parent
 
     @property
     def input(self):
+        """
+        Get the current input source for this multiplex
+        :return:  The current input
+        """
         return self._source
 
     @input.setter
-    def input(self, source):
+    def input(self, source) -> None:
         """
         Set the input for this output
         :param source:  The source to set as the input
@@ -41,22 +68,35 @@ class MultiplexedOutput(object):
 
 
 class Outputs(object):
+    """
+    A static manager for the created outputs for this process
+    """
 
     Output = collections.namedtuple('Output', ['id', 'display_name', 'output'])
     _outputs = []
 
     @classmethod
-    def get(cls):
+    def get(cls) -> typing.List[Output]:
+        """
+        Get the list of outputs
+        :return:  The list of registered outputs
+        """
         return cls._outputs
 
     @classmethod
-    def add_output(cls, display_name, output):
+    def add_output(cls, display_name: str, output) -> Output:
+        """
+        Add an output
+        :param display_name:  The name of the output to add
+        :param output:  The output instance to add
+        :return:  The newly wrapped output object
+        """
         output = cls.Output(str(uuid.uuid4()), display_name, output)
         cls._outputs.append(output)
         return output
 
     @classmethod
-    def get_output(cls, output):
+    def get_output(cls, output: str) -> Output:
         """
         Get the Output class for the given output
         :param output:  The output or output ID
@@ -69,7 +109,7 @@ class Outputs(object):
             raise ValueError('No such device found')
 
     @classmethod
-    def get_output_device(cls, name):
+    def get_output_device(cls, name: str) -> Output:
         """
         Get the Output class for the given output device
         :param name:  The device name of the output device
@@ -84,7 +124,7 @@ class Outputs(object):
             raise ValueError('No such device found')
 
     @classmethod
-    def get_icecast_output(cls, endpoint):
+    def get_icecast_output(cls, endpoint: str) -> Output:
         """
         Get the Output class for the given Icecast endpoint
         :param endpoint:  The endpoint of the Icecast output
@@ -99,7 +139,7 @@ class Outputs(object):
             raise ValueError('No such device found')
 
     @classmethod
-    def delete_output(cls, output):
+    def delete_output(cls, output: Output) -> None:
         """
         Delete an output
         :param output:  The output to delete

@@ -1,15 +1,8 @@
+import typing
 import numpy
 import threading
+import collections
 from . import callback
-
-
-class Input(object):
-    __slots__ = ('start_channel', 'channels', 'has_input')
-
-    def __init__(self, start_channel, channels, has_input):
-        self.start_channel = start_channel
-        self.channels = channels
-        self.has_input = has_input
 
 
 class Multiplex(callback.Callback):
@@ -17,7 +10,9 @@ class Multiplex(callback.Callback):
     A multiplexer that takes in multiple inputs and maps them to a multi-channel output
     """
 
-    def __init__(self, channels, block_size):
+    Input = collections.namedtuple('Input', ('start_channel', 'channels', 'has_input'))
+
+    def __init__(self, channels: int, block_size: int):
         """
         Construct a new multiplexer
         :param channels:  The number of output channels
@@ -33,14 +28,14 @@ class Multiplex(callback.Callback):
         self._tick()
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         """
         Get the number of output channels for this multiplexer
         :return:  The number of output channels
         """
         return self._channels
 
-    def add_input(self, source, start_channel):
+    def add_input(self, source, start_channel: int) -> None:
         """
         Add an input to the multiplexer
         :param source:  The device to input from
@@ -59,11 +54,11 @@ class Multiplex(callback.Callback):
         if source in self._inputs:
             self._input_lock.release()
             raise Exception("Unable to add inputs multiple times")
-        self._inputs[source] = Input(start_channel, channels, False)
+        self._inputs[source] = self.Input(start_channel, channels, False)
         self._input_lock.release()
         source.add_callback(self._input_callback)
 
-    def remove_input(self, source):
+    def remove_input(self, source) -> None:
         """
         Remove an input from the multiplexer
         :param source:  The input to remove
@@ -73,7 +68,7 @@ class Multiplex(callback.Callback):
         del self._inputs[source]
         self._input_lock.release()
 
-    def _tick(self):
+    def _tick(self) -> numpy.array:
         """
         Create a new sample and return the old one
         :return:  The completed input block
@@ -82,7 +77,7 @@ class Multiplex(callback.Callback):
         self._current_sample = numpy.zeros(self._block_size * self._channels, numpy.int16)
         return completed_sample
 
-    def _get_input(self, source):
+    def _get_input(self, source) -> Input:
         """
         Get the Input instance for the given source, calling _tick if we've seen it before
         :param source:  The source to get the input for
@@ -112,7 +107,7 @@ class Multiplex(callback.Callback):
 
         return this_input
 
-    def _input_callback(self, source, blocks):
+    def _input_callback(self, source, blocks: numpy.array) -> None:
         """
         Take an input block
         :param source:  The input that the block came from

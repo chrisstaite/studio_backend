@@ -1,3 +1,4 @@
+import typing
 import collections
 import uuid
 import audio
@@ -6,22 +7,35 @@ from . import mixer
 
 
 class Inputs(object):
+    """
+    A list of the created inputs in this process
+    """
 
     Input = collections.namedtuple('Input', ['id', 'display_name', 'input'])
     _inputs = []
 
     @classmethod
-    def get(cls):
+    def get(cls) -> typing.List[Input]:
+        """
+        Get the current inputs
+        :return:  The list of inputs
+        """
         return cls._inputs
 
     @classmethod
-    def add_input(cls, display_name, input_):
+    def add_input(cls, display_name: str, input_) -> Input:
+        """
+        Add a new input
+        :param display_name:  The name for the input
+        :param input_:  The input to add
+        :return:  The newly created input instance
+        """
         input_ = cls.Input(str(uuid.uuid4()), display_name, input_)
         cls._inputs.append(input_)
         return input_
 
     @classmethod
-    def get_input(cls, input_):
+    def get_input(cls, input_: typing.Union[typing.Any, str]) -> Input:
         """
         Get the Input class for the given input
         :param input_:  The input or input ID
@@ -34,7 +48,7 @@ class Inputs(object):
             raise ValueError('No such device found')
 
     @classmethod
-    def get_input_device(cls, name):
+    def get_input_device(cls, name: str) -> Input:
         """
         Get the Input class for the given output device
         :param name:  The device name of the input device
@@ -49,7 +63,7 @@ class Inputs(object):
             raise ValueError('No such device found')
 
     @classmethod
-    def delete_input(cls, input_):
+    def delete_input(cls, input_: Input) -> None:
         """
         Delete an input
         :param input_:  The Input instance to delete
@@ -61,7 +75,7 @@ class Inputs(object):
         cls._inputs.remove(input_)
 
 
-def get_input(input_id):
+def get_input(input_id: str):
     """
     Get an input for a given input ID
     :param input_id:  The ID of the input to find

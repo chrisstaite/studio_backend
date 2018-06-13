@@ -1,3 +1,4 @@
+import typing
 import flask_restful
 import flask_restful.reqparse
 import audio
@@ -7,15 +8,28 @@ from . import stream_sink
 
 
 class OutputDevice(flask_restful.Resource):
+    """
+    Handler for getting a list of available output devices
+    """
 
     @staticmethod
-    def get():
+    def get() -> typing.List[str]:
+        """
+        Get the list of available output devices
+        :return:  The list of available output devices
+        """
         return audio.output_device.OutputDevice.devices()
 
 
 class CreatedOutputs(flask_restful.Resource):
+    """
+    Handler for creating a new output and listing all outputs
+    """
 
     def __init__(self):
+        """
+        Create the parsers for creating devices
+        """
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
             'type', type=str, choices=('device', 'icecast', 'multiplex'),
@@ -43,17 +57,21 @@ class CreatedOutputs(flask_restful.Resource):
             'channels', type=int, help='The number of channels to split the output into', required=True
         )
 
-    def get(self):
+    def get(self) -> typing.List[typing.Dict]:
+        """
+        Get the current outputs
+        :return:  A list of created outputs
+        """
         return self._to_json(audio_manager.output.Outputs.get())
 
     @staticmethod
-    def _to_json(outputs):
+    def _to_json(outputs: typing.Iterable[audio_manager.output.Outputs.Output]) -> typing.List[typing.Dict]:
         """
         Take a list of Output objects and prepare them for jsonification
         :param outputs:  List of Output instances
         :return:  A list of dictionary objects
         """
-        def to_dict(output):
+        def to_dict(output: audio_manager.output.Outputs.Output) -> typing.Dict:
             ret = {
                 'id': output.id,
                 'display_name': output.display_name
@@ -73,7 +91,7 @@ class CreatedOutputs(flask_restful.Resource):
         return [to_dict(output) for output in outputs]
 
     @staticmethod
-    def _create_device(name):
+    def _create_device(name: str) -> audio.output_device.OutputDevice:
         """
         Create a new output device
         :param name:  The name of the output device to create
@@ -87,7 +105,7 @@ class CreatedOutputs(flask_restful.Resource):
         return audio.output_device.OutputDevice(name, settings.BLOCK_SIZE)
 
     @staticmethod
-    def _create_icecast(endpoint, password):
+    def _create_icecast(endpoint: str, password: str) -> audio.icecast.Icecast:
         """
         Create a new Icecast output device
         :param endpoint:  The Icecast endpoint to connect to
@@ -105,7 +123,7 @@ class CreatedOutputs(flask_restful.Resource):
         return icecast
 
     @staticmethod
-    def _create_multiplex(parent_id, channels):
+    def _create_multiplex(parent_id: str, channels: int) -> typing.List[audio_manager.output.MultiplexedOutput]:
         """
         Create a new multiplex output device
         :param parent_id:     The parent device to output to
@@ -129,7 +147,7 @@ class CreatedOutputs(flask_restful.Resource):
             for i in range(parent_channels // channels)
         ]
 
-    def post(self):
+    def post(self) -> typing.List[typing.Dict]:
         """
         Create a new output device
         :return:  Newly created Output objects
@@ -152,8 +170,14 @@ class CreatedOutputs(flask_restful.Resource):
 
 
 class Output(flask_restful.Resource):
+    """
+    Handler for updating an existing output and deleting it
+    """
 
     def __init__(self):
+        """
+        Create the parser for updating the output
+        """
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
             'input', type=str, help='The ID of the input to set to the output'
@@ -162,7 +186,12 @@ class Output(flask_restful.Resource):
             'display_name', type=str, help='The name to call this output'
         )
 
-    def put(self, output_id):
+    def put(self, output_id: str) -> bool:
+        """
+        Update an existing output with new attributes
+        :param output_id:  The ID of the output to update
+        :return:  Always True, errors abort
+        """
         try:
             output = audio_manager.output.Outputs.get_output(output_id)
         except ValueError:
@@ -176,9 +205,15 @@ class Output(flask_restful.Resource):
                 output.output.input = audio_manager.input.get_input(args['input'])
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
+        return True
 
     @staticmethod
-    def delete(output_id):
+    def delete(output_id: str) -> bool:
+        """
+        Delete the output
+        :param output_id:  The ID of the output
+        :return:  Always True, errors abort
+        """
         try:
             output = audio_manager.output.Outputs.get_output(output_id)
             audio_manager.output.Outputs.delete_output(output)

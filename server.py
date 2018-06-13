@@ -12,6 +12,9 @@ import uuid
 
 
 class Server(object):
+    """
+    A class managing the server configuration and running
+    """
 
     def __init__(self):
         """
@@ -25,12 +28,12 @@ class Server(object):
         self._setup_socketio()
         self._setup_angular()
 
-    def _setup_socketio(self):
+    def _setup_socketio(self) -> None:
         """
         Setup the SocketIO event handlers
         """
 
-    def _setup_rest(self):
+    def _setup_rest(self) -> None:
         """
         Add all of the resources to the server
         """
@@ -40,7 +43,7 @@ class Server(object):
         rest.stream_sink.setup_api(api)
         rest.audio_mix.setup_api(api)
 
-    def _setup_angular(self):
+    def _setup_angular(self) -> None:
         """
         Download any Angular modules required, build and add routes
         """
@@ -82,7 +85,7 @@ class Server(object):
             view_func=functools.partial(flask.redirect, '/frontend/')
         )
 
-    def run(self):
+    def run(self) -> None:
         """
         Start the server running
         """

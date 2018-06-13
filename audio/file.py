@@ -1,3 +1,4 @@
+import typing
 import audioread
 import threading
 import numpy
@@ -10,7 +11,7 @@ class File(callback.Callback):
     A wrapper around an audio file that allows it to be played as an input
     """
 
-    def __init__(self, path, blocks):
+    def __init__(self, path: str, blocks: int):
         """
         Open an audio file ready to play it
         :param path:  The path to the file to play
@@ -25,14 +26,14 @@ class File(callback.Callback):
         self._end_callback = None
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         """
         Get the number of channels in this file
         :return:  The number of audio channels in this file
         """
         return self._file.channels
 
-    def play(self):
+    def play(self) -> None:
         """
         Start the audio file playing to callbacks
         """
@@ -41,34 +42,34 @@ class File(callback.Callback):
         self._playing = True
         threading.Thread(target=self._play_thread, daemon=True).start()
 
-    def time(self):
+    def time(self) -> float:
         """
         Get the number of seconds into the track we have played
         :return:  The number of seconds played as a float
         """
         return self._time
 
-    def length(self):
+    def length(self) -> float:
         """
         Get the number of seconds the track is long
         :return:  The number of seconds in the track as a float
         """
         return self._file.duration
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Stop the file from playing
         """
         self._playing = False
 
-    def set_end_callback(self, end_callback):
+    def set_end_callback(self, end_callback: typing.Callable[[], None]) -> None:
         """
         Set a callback for when the file finishes playing
         :param end_callback:  The callback to call
         """
         self._end_callback = end_callback
 
-    def _play_thread(self):
+    def _play_thread(self) -> None:
         """
         The loop that plays the sound from start to end, queueing raw PCM blocks
         ready to be sent to callbacks when the clock source ticks

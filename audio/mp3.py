@@ -1,4 +1,5 @@
 import lameenc
+import numpy
 from . import callback
 
 
@@ -7,7 +8,7 @@ class Mp3(callback.Callback):
     An endpoint for an audio stream that encodes to MP3
     """
 
-    def __init__(self, quality=7, bit_rate=128):
+    def __init__(self, quality: int = 7, bit_rate: int = 128):
         """
         Create an MP3 encoder for an audio stream
         :param quality:   The quality to produce, 2 - best, 7 - fastest
@@ -24,7 +25,7 @@ class Mp3(callback.Callback):
         return self._input
 
     @input.setter
-    def input(self, source):
+    def input(self, source) -> None:
         """
         Set the input for this output
         :param source:  The input to set or None to clear
@@ -49,10 +50,9 @@ class Mp3(callback.Callback):
             self._input = source
             self._input.add_callback(self._input_callback)
 
-    def _input_callback(self, source, blocks):
+    def _input_callback(self, _, blocks: numpy.array) -> None:
         """
         Called when a block of samples is available from the input source
-        :param source:  The source that the input came from
         :param blocks:  The input block to write to the output
         """
         output = self._encoder.encode(blocks)

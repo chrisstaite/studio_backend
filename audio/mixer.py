@@ -1,15 +1,8 @@
+import typing
 import numpy
 import threading
+import collections
 from . import callback
-
-
-class Input(object):
-    __slots__ = ('channels', 'has_input', 'volume')
-
-    def __init__(self, channels, has_input, volume):
-        self.channels = channels
-        self.has_input = has_input
-        self.volume = volume
 
 
 class Mixer(callback.Callback):
@@ -17,7 +10,9 @@ class Mixer(callback.Callback):
     A basic mixer that takes inputs and adds them into a single output track
     """
 
-    def __init__(self, block_size, output_channels):
+    Input = collections.namedtuple('Input', ('channels', 'has_input', 'volume'))
+
+    def __init__(self, block_size: int, output_channels: int):
         """
         Create a new mixer that mixes lots of input streams into a single output stream
         :param block_size:  The number of blocks used per sample
@@ -33,14 +28,14 @@ class Mixer(callback.Callback):
         self._tick()
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         """
         Get the number of output channels for this mixer
         :return:  The number of output channels
         """
         return self._channels
 
-    def add_input(self, source):
+    def add_input(self, source) -> None:
         """
         Add an input to the mixer
         :param source:  The input to add to the mix
@@ -49,11 +44,11 @@ class Mixer(callback.Callback):
         if source in self._inputs:
             self._input_lock.release()
             raise Exception("Unable to add inputs multiple times")
-        self._inputs[source] = Input(source.channels, False, 0.5)
+        self._inputs[source] = self.Input(source.channels, False, 0.5)
         self._input_lock.release()
         source.add_callback(self._input_callback)
 
-    def remove_input(self, source):
+    def remove_input(self, source) -> None:
         """
         Remove an input from the mixer
         :param source:  The input to remove from the mix
@@ -63,7 +58,7 @@ class Mixer(callback.Callback):
         del self._inputs[source]
         self._input_lock.release()
 
-    def set_volume(self, source, volume):
+    def set_volume(self, source, volume: int) -> None:
         """
         Set the volume of the given source
         :param source:  The source to set the volume of
@@ -78,7 +73,7 @@ class Mixer(callback.Callback):
         self._inputs[source].volume = volume
         self._input_lock.release()
 
-    def _map_channels(self, blocks, channels):
+    def _map_channels(self, blocks: numpy.array, channels: int) -> numpy.array:
         """
         Map the channels in a block to the number of output channels of this mixer
         :param blocks:  The blocks with the number of channels in `channels`
@@ -100,7 +95,7 @@ class Mixer(callback.Callback):
                 output += scale * channel
             return output.astype(numpy.int16)
 
-    def _tick(self):
+    def _tick(self) -> numpy.array:
         """
         Create a new sample and return the old one
         :return:  The completed input block
@@ -109,7 +104,7 @@ class Mixer(callback.Callback):
         self._current_sample = numpy.zeros(self._block_size, numpy.int16)
         return completed_sample
 
-    def _get_input(self, source):
+    def _get_input(self, source) -> Input:
         """
         Get the Input instance for the given source, calling _tick if we've seen it before
         :param source:  The source to get the input for
@@ -139,7 +134,7 @@ class Mixer(callback.Callback):
 
         return this_input
 
-    def _input_callback(self, source, blocks):
+    def _input_callback(self, source, blocks: numpy.array) -> None:
         """
         Take an input block
         :param source:  The input that the block came from

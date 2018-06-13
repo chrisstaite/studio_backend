@@ -1,3 +1,4 @@
+import typing
 import sounddevice
 import sys
 import numpy
@@ -10,7 +11,7 @@ class OutputDevice(callback.Callback):
     A wrapper around an output device which plays samples to external audio hardware
     """
 
-    def __init__(self, name, block_size):
+    def __init__(self, name: str, block_size: int):
         """
         Create a new output device
         :param name:  The name of the output device to use
@@ -36,7 +37,7 @@ class OutputDevice(callback.Callback):
         self._started = False
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         Get the name of the output device
         :return:  The name of the output device
@@ -72,17 +73,16 @@ class OutputDevice(callback.Callback):
             self._stream.stop()
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         """
         Get the number of channels
         :return:  The number of channels for this input
         """
         return self._channels
 
-    def _input_callback(self, source, blocks):
+    def _input_callback(self, _, blocks: numpy.array) -> None:
         """
         Called when a block of samples is available from the input source
-        :param source:  The source that the input came from
         :param blocks:  The input block to write to the output
         """
         try:
@@ -91,7 +91,7 @@ class OutputDevice(callback.Callback):
             self._output_queue.get_nowait()
             self._output_queue.put_nowait(blocks)
 
-    def _output_callback(self, out_data, frames, time, status):
+    def _output_callback(self, out_data: numpy.array, frames: int, time: int, status: str) -> None:
         """
         Called every time a block of samples is wanted for the output
         :param out_data:  The list to put the output data into
@@ -102,8 +102,8 @@ class OutputDevice(callback.Callback):
         if status:
             print(status, file=sys.stderr)
         frames *= self._channels
+        data = numpy.zeros(0, numpy.int16)
         try:
-            data = numpy.zeros(0, numpy.int16)
             while len(data) < frames:
                 data = numpy.append(data, self._output_queue.get_nowait())
         except queue.Empty:
@@ -113,7 +113,7 @@ class OutputDevice(callback.Callback):
         self.notify_callbacks()
 
     @staticmethod
-    def devices():
+    def devices() -> typing.List[str]:
         """
         List the available output devices
         :return:  A list of device names to pass into the constructor

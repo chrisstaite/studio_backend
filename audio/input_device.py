@@ -1,3 +1,4 @@
+import typing
 import sounddevice
 import sys
 import numpy
@@ -9,7 +10,7 @@ class InputDevice(callback.Callback):
     A wrapper around audio input hardware to allow it to be played into the system
     """
 
-    def __init__(self, name, block_size):
+    def __init__(self, name: str, block_size: int):
         """
         Create a new input device
         :param name:  The name of the input device to use
@@ -32,7 +33,7 @@ class InputDevice(callback.Callback):
         self._last_time = None
         self._started = False
 
-    def add_callback(self, cb):
+    def add_callback(self, cb: typing.Callable[[numpy.array], None]) -> None:
         """
         Add a callback to this input device
         :param cb:  The callback to add
@@ -40,7 +41,7 @@ class InputDevice(callback.Callback):
         super().add_callback(cb)
         self._check_state()
 
-    def remove_callback(self, cb):
+    def remove_callback(self, cb: typing.Callable[[numpy.array], None]) -> None:
         """
         Remove a callback from this input device
         :param cb:  The callback to remove
@@ -48,7 +49,7 @@ class InputDevice(callback.Callback):
         super().add_callback(cb)
         self._check_state()
 
-    def _check_state(self):
+    def _check_state(self) -> None:
         """
         Check that we are started or stopped if we need to
         """
@@ -61,7 +62,7 @@ class InputDevice(callback.Callback):
             self._started = required_state
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         Get the name of the input device
         :return:  The input device name
@@ -69,14 +70,14 @@ class InputDevice(callback.Callback):
         return self._name
 
     @property
-    def channels(self):
+    def channels(self) -> int:
         """
         Get the number of channels
         :return:  The number of channels for this input
         """
         return self._channels
 
-    def _callback(self, in_data, frames, time, status):
+    def _callback(self, in_data: numpy.array, frames: int, time: int, status: str) -> None:
         """
         Called every time a block of samples is available from the input source
         :param in_data:  The block of samples
@@ -91,7 +92,7 @@ class InputDevice(callback.Callback):
         self.notify_callbacks(numpy.ravel(in_data))
 
     @staticmethod
-    def devices():
+    def devices() -> typing.List[str]:
         """
         List the available input devices
         :return:  A list of device names to pass into the constructor
