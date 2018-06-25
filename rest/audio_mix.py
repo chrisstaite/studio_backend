@@ -208,27 +208,28 @@ class MixerChannel(flask_restful.Resource):
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
                 raise  # No-op
-            for other_channel_id in mixer.mixer.get_channel_ids():
-                if other_channel_id != channel_id and mixer.mixer.get_channel(other_channel_id).input is new_input:
-                    flask_restful.abort(400, message='Source already assigned to a channel of this mixer')
+            if new_input is not None:
+                for other_channel_id in mixer.mixer.get_channel_ids():
+                    if other_channel_id != channel_id and mixer.mixer.get_channel(other_channel_id).input is new_input:
+                        flask_restful.abort(400, message='Source already assigned to a channel of this mixer')
             channel.input = new_input
             socketio.emit('mixer_channel_update', {'mixer': mixer_id, 'channel': channel_id, 'input': args['input']})
         return True
 
     @classmethod
-    def delete(cls, mixer_id: str, index: int) -> bool:
+    def delete(cls, mixer_id: str, channel_id: str) -> bool:
         """
         Delete a channel from a mixer
         :param mixer_id:  The ID of the mixer
-        :param index:  The index of the channel to remove
+        :param channel_id:  The ID of the channel in the mixer
         :return:  Always True, aborts on error
         """
         mixer = cls._get_mixer(mixer_id)
         try:
-            mixer.mixer.remove_channel(index)
+            mixer.mixer.remove_channel(channel_id)
             socketio = flask.current_app.extensions['socketio']
-            socketio.emit('mixer_channel_remove', {'mixer': mixer_id, 'channel': index})
-        except IndexError:
+            socketio.emit('mixer_channel_remove', {'mixer': mixer_id, 'channel': channel_id})
+        except KeyError:
             flask_restful.abort(404, message='Unknown channel for mixer')
         return True
 

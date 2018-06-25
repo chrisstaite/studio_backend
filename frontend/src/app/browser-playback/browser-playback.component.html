@@ -1,0 +1,5 @@
+<button mat-mini-fab
+        matTooltip="Create browser playback output" matTooltipPosition="before"
+        (click)="playing ? pause() : play()">
+  <mat-icon>{{ playing ? 'pause' : 'play_arrow' }}</mat-icon>
+</button>

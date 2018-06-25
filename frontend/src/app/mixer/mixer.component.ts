@@ -81,18 +81,30 @@ export class MixerComponent implements OnInit {
   }
 
   newChannel() {
-    let channels = this.channels;
-    this.http.post<string>('/audio/mixer/' + this.id + '/channel', {}).subscribe((id: string) => {
-      channels.push(new Channel(id, '', 1.0));
-    });
+    this.http.post<string>('/audio/mixer/' + this.id + '/channel', {}).subscribe();
   }
 
   changeInput(channel: Channel, input_id: string): void {
-    this.http.put('/audio/mixer/' + this.id + '/channel/' + channel.id, {'input' : input_id}).subscribe();
+    let previous_id = channel.input_id;
+    channel.input_id = input_id;
+    this.http.put('/audio/mixer/' + this.id + '/channel/' + channel.id, {'input' : input_id}).subscribe(
+      success => { },
+      error => {
+        channel.input_id = previous_id;
+      }
+    );
   }
 
   changeVolume(channel: Channel, volume: number): void {
     this.http.put('/audio/mixer/' + this.id + '/channel/' + channel.id, {'volume' : volume}).subscribe();
+  }
+
+  changeName(name: string): void {
+    this.http.put('/audio/mixer/' + this.id, {'display_name': name}).subscribe();
+  }
+
+  removeChannel(channel: Channel): void {
+    this.http.delete('/audio/mixer/' + this.id + '/channel/' + channel.id).subscribe();
   }
 
 }

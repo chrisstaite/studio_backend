@@ -21,6 +21,7 @@ import { InputListComponent, NewInputDialog } from './input-list/input-list.comp
 import { OutputListComponent, NewOutputDialog } from './output-list/output-list.component';
 import { MixerListComponent } from './mixer-list/mixer-list.component';
 import { MixerComponent } from './mixer/mixer.component';
+import { BrowserPlaybackComponent } from './browser-playback/browser-playback.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { MixerComponent } from './mixer/mixer.component';
     OutputListComponent,
     NewOutputDialog,
     MixerListComponent,
-    MixerComponent
+    MixerComponent,
+    BrowserPlaybackComponent
   ],
   entryComponents: [
     NewInputDialog,

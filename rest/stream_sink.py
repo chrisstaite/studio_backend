@@ -19,7 +19,7 @@ class Mp3Generator(object):
         # Low quality, 64kbit MP3 output for speed
         self._output = audio.mp3.Mp3(7, 64)
         self._output.add_callback(self._enqueue)
-        self._queue = queue.Queue(maxsize=16)
+        self._queue = queue.Queue(maxsize=512)
         output = audio_manager.output.Outputs.add_output(name, self._output)
         outputs = [{
             'id': output.id,
@@ -27,8 +27,8 @@ class Mp3Generator(object):
             'input_id': '',
             'type': 'browser'
         }]
-        socketio = flask.current_app.extensions['socketio']
-        socketio.emit('output_create', outputs)
+        self._socketio = flask.current_app.extensions['socketio']
+        self._socketio.emit('output_create', outputs)
 
     @property
     def input(self):
@@ -62,8 +62,7 @@ class Mp3Generator(object):
         try:
             output = audio_manager.output.Outputs.get_output(self._output)
             audio_manager.output.Outputs.delete_output(output)
-            socketio = flask.current_app.extensions['socketio']
-            socketio.emit('output_remove', {'id': output.id})
+            self._socketio.emit('output_remove', {'id': output.id})
         except ValueError:
             pass
 
@@ -74,7 +73,7 @@ class Mp3Generator(object):
         """
         while True:
             try:
-                yield self._queue.get(timeout=10)
+                yield self._queue.get(timeout=5)
             except queue.Empty:
                 # Send an empty block to check the connection
                 yield b''
@@ -92,7 +91,7 @@ class StreamSink(flask_restful.Resource):
         :param name:  The name to give the stream
         :return:  The streaming response
         """
-        return flask.Response(Mp3Generator(name), mimetype="audio/mp3")
+        return flask.Response(Mp3Generator(name), mimetype="audio/mpeg")
 
 
 def setup_api(api: flask_restful.Api) -> None:
