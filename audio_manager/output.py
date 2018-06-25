@@ -104,7 +104,10 @@ class Outputs(object):
         return output
 
     @classmethod
-    def get_output(cls, output: typing.Union[str, Output]) -> Output:
+    def get_output(cls, output: typing.Union[str,
+                                             audio.output_device.OutputDevice,
+                                             audio.icecast.Icecast,
+                                             audio.mp3.Mp3]) -> Output:
         """
         Get the Output class for the given output
         :param output:  The output or output ID

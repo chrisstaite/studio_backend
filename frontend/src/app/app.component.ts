@@ -14,12 +14,10 @@ export class AppComponent implements OnInit {
   private playing: Boolean;
 
   ngOnInit() {
-    /*
     this.browserOutput = new Audio();
     this.browserOutput.src = '/audio/output_stream/Browser';
     this.browserOutput.load();
     this.play();
-    */
   }
 
   play() : void {

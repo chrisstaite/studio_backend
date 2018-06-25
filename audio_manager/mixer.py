@@ -1,7 +1,6 @@
 import typing
 import audio
 import settings
-import collections
 import uuid
 import numpy
 from . import exception
@@ -77,7 +76,7 @@ class ChannelMixer(object):
         :param channels:  The number of output channels of the mixer (i.e. 2 for stereo)
         """
         self._mixer = audio.mixer.Mixer(settings.BLOCK_SIZE, channels)
-        self._channels = []
+        self._channels = {}
 
     @property
     def channels(self) -> int:
@@ -87,48 +86,52 @@ class ChannelMixer(object):
         """
         return self._mixer.channels
 
-    def get_channel(self, index: int) -> Channel:
+    def get_channel(self, id_: str) -> Channel:
         """
         Get the mixer channel
-        :param index:  The channel number to get (0-indexed)
+        :param id_:  The ID of the channel
         :returns:  The Channel instance for the given channel
         :raises IndexError:  That channel doesn't exist
         """
-        return self._channels[index]
+        return self._channels[id_]
 
-    def get_channel_index(self, channel: Channel) -> int:
+    def get_channel_ids(self) -> typing.Iterable[str]:
         """
-        Get the channel index for a given channel
-        :param channel:  The Channel instance to get the index of
-        :return:  The index of the channel
+        Get the IDs of all the channels
+        :return:  The channels IDs for the channels
+        """
+        return self._channels.keys()
+
+    def get_channel_id(self, channel: Channel) -> str:
+        """
+        Get the ID of the given channel
+        :param channel:  The Channel instance to get the ID of
+        :return:  The ID of the channel
         :raises ValueError:  That Channel instance isn't part of this Mixer
         """
-        return self._channels.index(channel)
+        try:
+            return next(key for key, value in self._channels.items() if value is channel)
+        except StopIteration:
+            raise ValueError('Channel not found in the mixer')
 
-    def get_channel_count(self) -> int:
-        """
-        Get the number of mixer
-        :return:  The number of channels
-        """
-        return len(self._channels)
-
-    def add_channel(self) -> Channel:
+    def add_channel(self) -> str:
         """
         Add a new channel to the mixer
-        :return:  The new Channel instance
+        :return:  The new channel ID
         """
         new_channel = Channel(self._mixer)
-        self._channels.append(new_channel)
-        return new_channel
+        id_ = str(uuid.uuid4())
+        self._channels[id_] = new_channel
+        return id_
 
-    def remove_channel(self, index: int) -> None:
+    def remove_channel(self, channel_id: str) -> None:
         """
         Remove a channel from the mixer
-        :param index:  The channel to remove (0-indexed)
-        :raises IndexError:  The channel doesn't exist
+        :param channel_id:  The ID of the channel to remove
+        :raises KeyError:  The channel doesn't exist
         """
-        self._channels[index].input = None
-        del self._channels[index]
+        self._channels[channel_id].input = None
+        del self._channels[channel_id]
 
     def has_callbacks(self) -> bool:
         """
@@ -152,12 +155,21 @@ class ChannelMixer(object):
         self._mixer.remove_callback(callback)
 
 
+class Mixer(object):
+
+    __slots__ = ('id', 'display_name', 'mixer')
+
+    def __init__(self, id_, display_name, mixer):
+        self.id = id_
+        self.display_name = display_name
+        self.mixer = mixer
+
+
 class Mixers(object):
     """
     A list of the created mixers
     """
 
-    Mixer = collections.namedtuple('Mixer', ['id', 'display_name', 'mixer'])
     _mixers = []
 
     @classmethod
@@ -173,7 +185,7 @@ class Mixers(object):
         :return:  The newly created Mixers.Mixer instance
         """
         mixer = ChannelMixer(channels)
-        mixer = cls.Mixer(str(uuid.uuid4()), display_name, mixer)
+        mixer = Mixer(str(uuid.uuid4()), display_name, mixer)
         cls._mixers.append(mixer)
         return mixer
 

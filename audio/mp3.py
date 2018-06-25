@@ -55,6 +55,9 @@ class Mp3(callback.Callback):
         Called when a block of samples is available from the input source
         :param blocks:  The input block to write to the output
         """
-        output = self._encoder.encode(blocks)
+        encoder = self._encoder
+        if encoder is None:
+            return
+        output = encoder.encode(blocks)
         if len(output) > 0:
             self.notify_callbacks(output)

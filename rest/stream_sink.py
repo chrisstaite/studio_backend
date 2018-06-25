@@ -20,7 +20,15 @@ class Mp3Generator(object):
         self._output = audio.mp3.Mp3(7, 64)
         self._output.add_callback(self._enqueue)
         self._queue = queue.Queue(maxsize=16)
-        audio_manager.output.Outputs.add_output(name, self._output)
+        output = audio_manager.output.Outputs.add_output(name, self._output)
+        outputs = [{
+            'id': output.id,
+            'display_name': name,
+            'input_id': '',
+            'type': 'browser'
+        }]
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('output_create', outputs)
 
     @property
     def input(self):
@@ -54,6 +62,8 @@ class Mp3Generator(object):
         try:
             output = audio_manager.output.Outputs.get_output(self._output)
             audio_manager.output.Outputs.delete_output(output)
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('output_remove', {'id': output.id})
         except ValueError:
             pass
 

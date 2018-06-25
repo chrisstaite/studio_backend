@@ -1,4 +1,5 @@
 import typing
+import flask
 import flask_restful
 import flask_restful.reqparse
 import audio
@@ -167,7 +168,10 @@ class CreatedOutputs(flask_restful.Resource):
         else:
             output = audio_manager.output.Outputs.add_output(args['display_name'], output_device)
             outputs.append(output)
-        return self._to_json(outputs)
+        outputs = self._to_json(outputs)
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('output_create', outputs)
+        return outputs
 
 
 class Output(flask_restful.Resource):
@@ -199,11 +203,14 @@ class Output(flask_restful.Resource):
             flask_restful.abort(404, message='No such output exists')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
+        socketio = flask.current_app.extensions['socketio']
         if args['display_name'] is not None:
             output.display_name = args['display_name']
+            socketio.emit('output_update', {'id': output.id, 'display_name': output.display_name})
         if args['input'] is not None:
             try:
                 output.output.input = audio_manager.input.get_input(args['input'])
+                socketio.emit('output_update', {'id': output.id, 'input': args['input']})
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
         return True
@@ -217,7 +224,11 @@ class Output(flask_restful.Resource):
         """
         try:
             output = audio_manager.output.Outputs.get_output(output_id)
+            # If the user is deleting it, then let them even if it's in use
+            output.output.input = None
             audio_manager.output.Outputs.delete_output(output)
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('output_remove', {'id': output.id})
         except ValueError:
             flask_restful.abort(404, message='No such output exists')
         except audio_manager.exception.InUseException:

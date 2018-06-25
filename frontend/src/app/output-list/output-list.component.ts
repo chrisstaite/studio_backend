@@ -46,6 +46,9 @@ export class OutputListComponent implements OnInit {
 
   ngOnInit() {
     this.socket = io();
+    this.socket.on('output_create', this.createOutputEvent.bind(this));
+    this.socket.on('output_update', this.updateOutputEvent.bind(this));
+    this.socket.on('output_remove', this.removeOutputEvent.bind(this));
     this.inputs = this.inputService.inputs;
     let outputs = this.outputs;
     this.http.get<Array<Output>>('/audio/output').subscribe((data: Array<Output>) => {
@@ -55,6 +58,34 @@ export class OutputListComponent implements OnInit {
     });
   }
 
+  createOutputEvent(data: Array<Output>): void {
+    let outputs = this.outputs;
+    data.forEach(function (output) {
+      output = new Output().deserialise(output);
+      if (!outputs.some(x => x.id == output.id)) {
+        outputs.push(output);
+      }
+    });
+  }
+
+  updateOutputEvent(data): void {
+    let output = this.outputs.find(x => x.id == data.id);
+    if ('display_name' in data) {
+      output.display_name = data['display_name']
+    }
+    if ('input' in data) {
+      output.input_id = data['input']
+    }
+  }
+
+  removeOutputEvent(data): void {
+    let output = this.outputs.find(x => x.id == data.id);
+    let index = this.outputs.indexOf(output, 0);
+    if (index != -1) {
+      this.outputs.splice(index, 1);
+    }
+  }
+
   newOutput(): void {
     this.dialog.open(NewOutputDialog, { data: { parent: this } });
   }
@@ -62,7 +93,7 @@ export class OutputListComponent implements OnInit {
   removeOutput(output: Output): void {
     this.http.delete('/audio/output/' + output.id).subscribe(() => {
       let index = this.outputs.indexOf(output, 0);
-      if (index > -1) {
+      if (index != -1) {
          this.outputs.splice(index, 1);
       }
     });
@@ -109,9 +140,6 @@ export class NewOutputDialog implements OnInit {
   }
 
   private newDeviceHandler(outputs: Array<Output>): void {
-    outputs.forEach((output: Output) => {
-      this.data.parent.outputs.push(new Output().deserialise(output));
-    });
     this.dialog.close();
   }
 

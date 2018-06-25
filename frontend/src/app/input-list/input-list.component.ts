@@ -40,6 +40,9 @@ export class InputListComponent implements OnInit {
 
   ngOnInit() {
     this.socket = io();
+    this.socket.on('input_create', this.createInputEvent.bind(this));
+    this.socket.on('input_update', this.updateInputEvent.bind(this));
+    this.socket.on('input_remove', this.removeInputEvent.bind(this));
     let that = this;
     this.http.get<Array<Input>>('/audio/input').subscribe((data: Array<Input>) => {
       data.forEach(function (input) {
@@ -48,6 +51,33 @@ export class InputListComponent implements OnInit {
         that.inputService.addInput(new_input.id, new_input.display_name);
       });
     });
+  }
+
+  createInputEvent(data: Array<Input>): void {
+    let inputs = this.inputs;
+    let inputService = this.inputService;
+    data.forEach(function (input) {
+      input = new Input().deserialise(input);
+      if (!inputs.some(x => x.id == input.id)) {
+        inputs.push(input);
+        inputService.addInput(input.id, input.display_name);
+      }
+    });
+  }
+
+  updateInputEvent(data): void {
+    let input = this.inputs.find(x => x.id == data.id);
+    if ('display_name' in data) {
+      input.display_name = data.display_name
+    }
+  }
+
+  removeInputEvent(data): void {
+    let input = this.inputs.find(x => x.id == data.id);
+    let index = this.inputs.indexOf(input, 0);
+    if (index != -1) {
+      this.inputs.splice(index, 1);
+    }
   }
 
   newInput(): void {
@@ -96,11 +126,6 @@ export class NewInputDialog implements OnInit {
   }
 
   private newDeviceHandler(inputs: Array<Input>): void {
-    inputs.forEach((input: Input) => {
-      let new_input = new Input().deserialise(input);
-      this.data.parent.inputs.push(new_input);
-      this.inputService.addInput(new_input.id, new_input.display_name);
-    });
     this.dialog.close();
   }
 

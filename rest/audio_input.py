@@ -1,4 +1,5 @@
 import typing
+import flask
 import flask_restful
 import flask_restful.reqparse
 import audio
@@ -91,7 +92,10 @@ class CreatedInputs(flask_restful.Resource):
         type_args = getattr(self, '_' + args['type'] + '_parser').parse_args(strict=False)
         input_device = type_function(**type_args)
         inputs = [audio_manager.input.Inputs.add_input(args['display_name'], input_device)]
-        return self._to_json(inputs)
+        inputs = self._to_json(inputs)
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('input_create', inputs)
+        return inputs
 
 
 class Input(flask_restful.Resource):
@@ -120,8 +124,10 @@ class Input(flask_restful.Resource):
             flask_restful.abort(404, message='No such input exists')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
+        socketio = flask.current_app.extensions['socketio']
         if args['display_name'] is not None:
             input_.display_name = args['display_name']
+            socketio.emit('input_update', {'id': input_id, 'display_name': args['display_name']})
         return True
 
     @staticmethod
@@ -134,6 +140,8 @@ class Input(flask_restful.Resource):
         try:
             input_ = audio_manager.input.Inputs.get_input(input_id)
             audio_manager.input.Inputs.delete_input(input_)
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('input_remove', {'id': input_id})
         except ValueError:
             flask_restful.abort(404, message='No such input exists')
         except audio_manager.exception.InUseException:

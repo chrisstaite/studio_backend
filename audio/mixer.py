@@ -145,7 +145,10 @@ class Mixer(callback.Callback):
         :param source:  The input that the block came from
         :param blocks:  The input data from the input
         """
-        this_input = self._get_input(source)
+        try:
+            this_input = self._get_input(source)
+        except KeyError:
+            return
 
         if this_input.channels != self._channels:
             # Need to re-sample the channels

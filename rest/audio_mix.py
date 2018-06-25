@@ -1,4 +1,5 @@
 import typing
+import flask
 import flask_restful
 import flask_restful.reqparse
 import audio_manager
@@ -22,7 +23,7 @@ class CreatedMixers(flask_restful.Resource):
         )
 
     @staticmethod
-    def _to_json(mixers: typing.Iterable[audio_manager.mixer.Mixers.Mixer]) -> typing.List[typing.Dict]:
+    def _to_json(mixers: typing.Iterable[audio_manager.mixer.Mixer]) -> typing.List[typing.Dict]:
         """
         Take a list of Mixer objects and prepare them for jsonification
         :param mixers:  List of Mixer instances
@@ -32,8 +33,7 @@ class CreatedMixers(flask_restful.Resource):
             ret = {
                 'id': mixer.id,
                 'display_name': mixer.display_name,
-                'output_channels': mixer.mixer.channels,
-                'channel_count': mixer.mixer.get_channel_count()
+                'output_channels': mixer.mixer.channels
             }
             return ret
         return [to_dict(mixer) for mixer in mixers]
@@ -52,7 +52,10 @@ class CreatedMixers(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         mixers = [audio_manager.mixer.Mixers.add_mixer(args['display_name'], args['channels'])]
-        return self._to_json(mixers)
+        mixers = self._to_json(mixers)
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('mixer_create', mixers)
+        return mixers
 
 
 class Mixer(flask_restful.Resource):
@@ -70,7 +73,7 @@ class Mixer(flask_restful.Resource):
         )
 
     @staticmethod
-    def _get_mixer(mixer_id: str) -> audio_manager.mixer.Mixers.Mixer:
+    def _get_mixer(mixer_id: str) -> audio_manager.mixer.Mixer:
         try:
             return audio_manager.mixer.Mixers.get_mixer(mixer_id)
         except ValueError:
@@ -78,8 +81,9 @@ class Mixer(flask_restful.Resource):
             raise  # No-op
 
     @staticmethod
-    def _dict_channel(channel: audio_manager.mixer.Channel):
+    def _dict_channel(id_: str, channel: audio_manager.mixer.Channel):
         return {
+            'id': id_,
             'volume': channel.volume,
             'input': audio_manager.input.get_input_id(channel.input)
         }
@@ -91,7 +95,7 @@ class Mixer(flask_restful.Resource):
             'display_name': mixer.display_name,
             'output_channels': mixer.mixer.channels,
             'channels': [
-                self._dict_channel(mixer.mixer.get_channel(i)) for i in range(mixer.mixer.get_channel_count())
+                self._dict_channel(id_, mixer.mixer.get_channel(id_)) for id_ in mixer.mixer.get_channel_ids()
             ]
         }
 
@@ -103,8 +107,10 @@ class Mixer(flask_restful.Resource):
         """
         mixer = self._get_mixer(mixer_id)
         args = self._parser.parse_args(strict=True)
+        socketio = flask.current_app.extensions['socketio']
         if args['display_name'] is not None:
             mixer.display_name = args['display_name']
+            socketio.emit('mixer_update', {'id': mixer_id, 'display_name': args['display_name']})
         return True
 
     def delete(self, mixer_id: str) -> bool:
@@ -116,6 +122,8 @@ class Mixer(flask_restful.Resource):
         mixer = self._get_mixer(mixer_id)
         try:
             audio_manager.mixer.Mixers.delete_mixer(mixer)
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('mixer_remove', {'id': mixer_id})
         except ValueError:
             flask_restful.abort(404, message='Mixer was already deleted')
         except audio_manager.exception.InUseException:
@@ -137,8 +145,10 @@ class NewMixerChannel(flask_restful.Resource):
         """
         try:
             mixer = audio_manager.mixer.Mixers.get_mixer(mixer_id)
-            channel = mixer.mixer.add_channel()
-            return mixer.mixer.get_channel_index(channel)
+            channel_id = mixer.mixer.add_channel()
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('mixer_channel_create', {'mixer': mixer_id, 'channel': channel_id})
+            return channel_id
         except ValueError:
             flask_restful.abort(404, message='No such mixer exists')
         except audio_manager.exception.InUseException:
@@ -163,7 +173,7 @@ class MixerChannel(flask_restful.Resource):
         )
 
     @staticmethod
-    def _get_mixer(mixer_id: str) -> audio_manager.mixer.Mixers.Mixer:
+    def _get_mixer(mixer_id: str) -> audio_manager.mixer.Mixer:
         """
         Get the mixer by its ID
         :param mixer_id:  The ID of the mixer
@@ -174,32 +184,35 @@ class MixerChannel(flask_restful.Resource):
         except ValueError:
             flask_restful.abort(404, message='No such mixer exists')
 
-    def put(self, mixer_id: str, index: int) -> bool:
+    def put(self, mixer_id: str, channel_id: str) -> bool:
         """
         Update the mixer channels' attributes
         :param mixer_id:  The ID of the mixer
-        :param index:  The index of the channel in the mixer
+        :param channel_id:  The ID of the channel in the mixer
         :return:  Always True, aborts on error
         """
         mixer = self._get_mixer(mixer_id)
         try:
-            channel = mixer.mixer.get_channel(index)
+            channel = mixer.mixer.get_channel(channel_id)
         except IndexError:
             flask_restful.abort(404, message='Channel does not exist on the mixer')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
+        socketio = flask.current_app.extensions['socketio']
         if args['volume'] is not None:
             channel.volume = args['volume']
+            socketio.emit('mixer_channel_update', {'mixer': mixer_id, 'channel': channel_id, 'volume': args['volume']})
         if args['input'] is not None:
             try:
                 new_input = audio_manager.input.get_input(args['input'])
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
                 raise  # No-op
-            for i in range(mixer.mixer.get_channel_count()):
-                if index != i and mixer.mixer.get_channel(i).input is new_input:
+            for other_channel_id in mixer.mixer.get_channel_ids():
+                if other_channel_id != channel_id and mixer.mixer.get_channel(other_channel_id).input is new_input:
                     flask_restful.abort(400, message='Source already assigned to a channel of this mixer')
             channel.input = new_input
+            socketio.emit('mixer_channel_update', {'mixer': mixer_id, 'channel': channel_id, 'input': args['input']})
         return True
 
     @classmethod
@@ -213,6 +226,8 @@ class MixerChannel(flask_restful.Resource):
         mixer = cls._get_mixer(mixer_id)
         try:
             mixer.mixer.remove_channel(index)
+            socketio = flask.current_app.extensions['socketio']
+            socketio.emit('mixer_channel_remove', {'mixer': mixer_id, 'channel': index})
         except IndexError:
             flask_restful.abort(404, message='Unknown channel for mixer')
         return True
@@ -226,4 +241,4 @@ def setup_api(api: flask_restful.Api) -> None:
     api.add_resource(CreatedMixers, '/audio/mixer')
     api.add_resource(Mixer, '/audio/mixer/<string:mixer_id>')
     api.add_resource(NewMixerChannel, '/audio/mixer/<string:mixer_id>/channel')
-    api.add_resource(MixerChannel, '/audio/mixer/<string:mixer_id>/channel/<int:index>')
+    api.add_resource(MixerChannel, '/audio/mixer/<string:mixer_id>/channel/<string:channel_id>')
