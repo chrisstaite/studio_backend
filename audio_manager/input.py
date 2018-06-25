@@ -1,9 +1,18 @@
 import typing
-import collections
 import uuid
 import audio
 from . import exception
 from . import mixer
+
+
+class Input(object):
+
+    __slots__ = ('id', 'display_name', 'input')
+
+    def __init__(self, id_, display_name, input_):
+        self.id = id_
+        self.display_name = display_name
+        self.input = input_
 
 
 class Inputs(object):
@@ -11,7 +20,6 @@ class Inputs(object):
     A list of the created inputs in this process
     """
 
-    Input = collections.namedtuple('Input', ['id', 'display_name', 'input'])
     _inputs = []
 
     @classmethod
@@ -30,7 +38,7 @@ class Inputs(object):
         :param input_:  The input to add
         :return:  The newly created input instance
         """
-        input_ = cls.Input(str(uuid.uuid4()), display_name, input_)
+        input_ = Input(str(uuid.uuid4()), display_name, input_)
         cls._inputs.append(input_)
         return input_
 
@@ -92,4 +100,24 @@ def get_input(input_id: str):
         pass
     # Look for another mixer next
     return mixer.Mixers.get_mixer(input_id).mixer
+    # TODO: Add a playlist source lookup
+
+
+def get_input_id(input_) -> str:
+    """
+    Get an input ID for a given input
+    :param input_:  The input to find the ID for
+    :return:  The ID for the given input or '' if the input was None
+    :raises ValueError:  No such input found
+    """
+    # An empty ID means set it to nothing
+    if input_ is None:
+        return ''
+    # Look for a device input first
+    try:
+        return Inputs.get_input(input_).id
+    except ValueError:
+        pass
+    # Look for another mixer next
+    return mixer.Mixers.get_mixer(input_).id
     # TODO: Add a playlist source lookup

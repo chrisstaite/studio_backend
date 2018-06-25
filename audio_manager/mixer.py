@@ -42,7 +42,7 @@ class Channel(object):
             self._source = None
         if source is not None:
             self._mixer.add_input(source)
-            self._source = None
+            self._source = source
             self._mixer.set_volume(source, self._volume)
 
     @property
@@ -59,6 +59,8 @@ class Channel(object):
         Set the volume for this channel
         :param volume:  The volume to set
         """
+        if not isinstance(volume, float):
+            raise ValueError('Volume must be a float')
         if self._source is not None:
             self._mixer.set_volume(self._source, volume)
         self._volume = volume

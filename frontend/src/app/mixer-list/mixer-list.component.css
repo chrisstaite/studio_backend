@@ -1,0 +1,11 @@
+.mixer-list {
+  position: relative;
+  min-height: 200px;
+  padding-bottom: 20px;
+}
+
+.add-button {
+  position: absolute;
+  right: 5px;
+  bottom: 10px;
+}

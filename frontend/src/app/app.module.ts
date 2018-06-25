@@ -12,13 +12,15 @@ import {
   MatExpansionModule,
   MatInputModule,
   MatSelectModule,
-  MatGridListModule
+  MatGridListModule,
+  MatSliderModule
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
 import { InputListComponent, NewInputDialog } from './input-list/input-list.component';
 import { OutputListComponent, NewOutputDialog } from './output-list/output-list.component';
 import { MixerListComponent } from './mixer-list/mixer-list.component';
+import { MixerComponent } from './mixer/mixer.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +29,8 @@ import { MixerListComponent } from './mixer-list/mixer-list.component';
     NewInputDialog,
     OutputListComponent,
     NewOutputDialog,
-    MixerListComponent
+    MixerListComponent,
+    MixerComponent
   ],
   entryComponents: [
     NewInputDialog,
@@ -45,7 +48,8 @@ import { MixerListComponent } from './mixer-list/mixer-list.component';
     MatExpansionModule,
     MatInputModule,
     MatSelectModule,
-    MatGridListModule
+    MatGridListModule,
+    MatSliderModule
   ],
   providers: [],
   bootstrap: [AppComponent]

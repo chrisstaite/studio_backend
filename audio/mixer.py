@@ -1,16 +1,22 @@
-import typing
 import numpy
 import threading
-import collections
 from . import callback
+
+
+class Input(object):
+
+    __slots__ = ('channels', 'has_input', 'volume')
+
+    def __init__(self, channels, has_input, volume):
+        self.channels = channels
+        self.has_input = has_input
+        self.volume = volume
 
 
 class Mixer(callback.Callback):
     """
     A basic mixer that takes inputs and adds them into a single output track
     """
-
-    Input = collections.namedtuple('Input', ('channels', 'has_input', 'volume'))
 
     def __init__(self, block_size: int, output_channels: int):
         """
@@ -44,7 +50,7 @@ class Mixer(callback.Callback):
         if source in self._inputs:
             self._input_lock.release()
             raise Exception("Unable to add inputs multiple times")
-        self._inputs[source] = self.Input(source.channels, False, 0.5)
+        self._inputs[source] = Input(source.channels, False, 0.5)
         self._input_lock.release()
         source.add_callback(self._input_callback)
 
@@ -58,7 +64,7 @@ class Mixer(callback.Callback):
         del self._inputs[source]
         self._input_lock.release()
 
-    def set_volume(self, source, volume: int) -> None:
+    def set_volume(self, source, volume: float) -> None:
         """
         Set the volume of the given source
         :param source:  The source to set the volume of
@@ -66,7 +72,6 @@ class Mixer(callback.Callback):
         :raises ValueError:  If volume is not between 0 and 2
         :raises KeyError:  If the source is not in this mixer
         """
-        volume = float(volume)
         if volume < 0.0 or volume > 2.0:
             raise ValueError("Volume must be between 0 and 2")
         self._input_lock.acquire()

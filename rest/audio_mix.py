@@ -32,7 +32,8 @@ class CreatedMixers(flask_restful.Resource):
             ret = {
                 'id': mixer.id,
                 'display_name': mixer.display_name,
-                'channels': mixer.mixer.get_channel_count()
+                'output_channels': mixer.mixer.channels,
+                'channel_count': mixer.mixer.get_channel_count()
             }
             return ret
         return [to_dict(mixer) for mixer in mixers]
@@ -50,8 +51,8 @@ class CreatedMixers(flask_restful.Resource):
         :return:  The new mixer object
         """
         args = self._parser.parse_args(strict=True)
-        inputs = [audio_manager.mixer.Mixers.add_mixer(args['display_name'], args['channels'])]
-        return self._to_json(inputs)
+        mixers = [audio_manager.mixer.Mixers.add_mixer(args['display_name'], args['channels'])]
+        return self._to_json(mixers)
 
 
 class Mixer(flask_restful.Resource):
@@ -68,34 +69,55 @@ class Mixer(flask_restful.Resource):
             'display_name', type=str, help='The name to call this mixer'
         )
 
+    @staticmethod
+    def _get_mixer(mixer_id: str) -> audio_manager.mixer.Mixers.Mixer:
+        try:
+            return audio_manager.mixer.Mixers.get_mixer(mixer_id)
+        except ValueError:
+            flask_restful.abort(404, message='No such mixer exists')
+            raise  # No-op
+
+    @staticmethod
+    def _dict_channel(channel: audio_manager.mixer.Channel):
+        return {
+            'volume': channel.volume,
+            'input': audio_manager.input.get_input_id(channel.input)
+        }
+
+    def get(self, mixer_id: str) -> typing.Dict:
+        mixer = self._get_mixer(mixer_id)
+        return {
+            'id': mixer.id,
+            'display_name': mixer.display_name,
+            'output_channels': mixer.mixer.channels,
+            'channels': [
+                self._dict_channel(mixer.mixer.get_channel(i)) for i in range(mixer.mixer.get_channel_count())
+            ]
+        }
+
     def put(self, mixer_id: str) -> bool:
         """
         Update a mixers' attributes
         :param mixer_id:  The mixer ID to update
         :return:  Always True, aborts if there is an error
         """
-        try:
-            mixer = audio_manager.mixer.Mixers.get_mixer(mixer_id)
-        except ValueError:
-            flask_restful.abort(404, message='No such mixer exists')
-            raise  # No-op
+        mixer = self._get_mixer(mixer_id)
         args = self._parser.parse_args(strict=True)
-        if 'display_name' in args:
+        if args['display_name'] is not None:
             mixer.display_name = args['display_name']
         return True
 
-    @staticmethod
-    def delete(mixer_id: str) -> bool:
+    def delete(self, mixer_id: str) -> bool:
         """
         Delete the mixer
         :param mixer_id:  The ID of the mixer to delete
         :return:  Always True, aborts on error
         """
+        mixer = self._get_mixer(mixer_id)
         try:
-            mixer = audio_manager.mixer.Mixers.get_mixer(mixer_id)
             audio_manager.mixer.Mixers.delete_mixer(mixer)
         except ValueError:
-            flask_restful.abort(404, message='No such mixer exists')
+            flask_restful.abort(404, message='Mixer was already deleted')
         except audio_manager.exception.InUseException:
             flask_restful.abort(400, message='Mixer is in use')
         return True
@@ -166,9 +188,9 @@ class MixerChannel(flask_restful.Resource):
             flask_restful.abort(404, message='Channel does not exist on the mixer')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
-        if 'volume' in args:
+        if args['volume'] is not None:
             channel.volume = args['volume']
-        if 'input' in args:
+        if args['input'] is not None:
             try:
                 new_input = audio_manager.input.get_input(args['input'])
             except ValueError:

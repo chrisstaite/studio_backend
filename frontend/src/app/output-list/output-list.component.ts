@@ -1,6 +1,8 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { AvailableInputsService, AvailableInput } from '../available-inputs.service';
+import { Observable } from 'rxjs/Observable';
 import * as io from 'socket.io-client';
 
 class Output {
@@ -8,6 +10,7 @@ class Output {
   type: string;
   id: string;
   display_name: string;
+  input_id: string;
   parameters: any;
 
   constructor() { }
@@ -19,6 +22,8 @@ class Output {
     delete input['id'];
     this.display_name = input['display_name'];
     delete input['display_name'];
+    this.input_id = input['input_id'];
+    delete input['input_id'];
     this.parameters = input;
     return this;
   }
@@ -33,17 +38,19 @@ class Output {
 export class OutputListComponent implements OnInit {
   outputs: Array<Output> = [];
 
+  inputs: Observable<Array<AvailableInput>>;
+
   private socket: SocketIOClient.Socket;
 
-  constructor(private http: HttpClient, private dialog: MatDialog) { }
+  constructor(private http: HttpClient, private dialog: MatDialog, private inputService: AvailableInputsService) { }
 
   ngOnInit() {
     this.socket = io();
-    // For some reason in this special case, this goes out of scope??
-    let that = this;
+    this.inputs = this.inputService.inputs;
+    let outputs = this.outputs;
     this.http.get<Array<Output>>('/audio/output').subscribe((data: Array<Output>) => {
       data.forEach(function (output) {
-        that.outputs.push(new Output().deserialise(output));
+        outputs.push(new Output().deserialise(output));
       });
     });
   }
@@ -59,6 +66,14 @@ export class OutputListComponent implements OnInit {
          this.outputs.splice(index, 1);
       }
     });
+  }
+
+  changeName(output: Output, name: string): void {
+    this.http.put('/audio/output/' + output.id, {'display_name' : name}).subscribe();
+  }
+
+  changeInput(output: Output, input_id: string): void {
+    this.http.put('/audio/output/' + output.id, {'input' : input_id}).subscribe();
   }
 
 }

@@ -7,11 +7,23 @@
       <mat-card-title *ngIf="output.type == 'multiplex'">Multiplexed output</mat-card-title>
       <mat-card-content>
         <mat-form-field>
-          <input matInput placeholder="Name" [value]="output.display_name" />
+          <input matInput #output_name placeholder="Name" [value]="output.display_name"
+                 (change)="changeName(output, output_name.value)" />
         </mat-form-field>
       </mat-card-content>
       <mat-card-content *ngIf="output.type == 'device'">{{ output.parameters['name'] }}</mat-card-content>
       <mat-card-content *ngIf="output.type == 'icecast'">{{ output.parameters['endpoint'] }}</mat-card-content>
+      <mat-card-content>
+        <mat-form-field>
+          <mat-select placeholder="Input" [value]="output.input_id"
+                      (selectionChange)="changeInput(output, $event.value)">
+            <mat-option value="">None</mat-option>
+            <mat-option *ngFor="let input of inputs | async" [value]="input.id">
+              {{ input.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </mat-card-content>
       <mat-card-actions>
         <button mat-mini-fab
                 matTooltip="Remove this device" matTooltipPosition="before"

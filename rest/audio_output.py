@@ -65,16 +65,17 @@ class CreatedOutputs(flask_restful.Resource):
         return self._to_json(audio_manager.output.Outputs.get())
 
     @staticmethod
-    def _to_json(outputs: typing.Iterable[audio_manager.output.Outputs.Output]) -> typing.List[typing.Dict]:
+    def _to_json(outputs: typing.Iterable[audio_manager.output.Output]) -> typing.List[typing.Dict]:
         """
         Take a list of Output objects and prepare them for jsonification
         :param outputs:  List of Output instances
         :return:  A list of dictionary objects
         """
-        def to_dict(output: audio_manager.output.Outputs.Output) -> typing.Dict:
+        def to_dict(output: audio_manager.output.Output) -> typing.Dict:
             ret = {
                 'id': output.id,
-                'display_name': output.display_name
+                'display_name': output.display_name,
+                'input_id': audio_manager.input.get_input_id(output.output.input)
             }
             if isinstance(output.output, audio.output_device.OutputDevice):
                 ret['type'] = 'device'
@@ -198,9 +199,9 @@ class Output(flask_restful.Resource):
             flask_restful.abort(404, message='No such output exists')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
-        if 'display_name' in args:
+        if args['display_name'] is not None:
             output.display_name = args['display_name']
-        if 'input' in args:
+        if args['input'] is not None:
             try:
                 output.output.input = audio_manager.input.get_input(args['input'])
             except ValueError:

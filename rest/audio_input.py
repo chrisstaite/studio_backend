@@ -50,7 +50,7 @@ class CreatedInputs(flask_restful.Resource):
         return self._to_json(audio_manager.input.Inputs.get())
 
     @staticmethod
-    def _to_json(inputs: typing.Iterable[audio_manager.input.Inputs.Input]) -> typing.List[typing.Dict]:
+    def _to_json(inputs: typing.Iterable[audio_manager.input.Input]) -> typing.List[typing.Dict]:
         """
         Take a list of Input objects and prepare them for jsonification
         :param inputs:  List of Input instances
@@ -120,7 +120,7 @@ class Input(flask_restful.Resource):
             flask_restful.abort(404, message='No such input exists')
             raise  # No-op
         args = self._parser.parse_args(strict=True)
-        if 'display_name' in args:
+        if args['display_name'] is not None:
             input_.display_name = args['display_name']
         return True
 

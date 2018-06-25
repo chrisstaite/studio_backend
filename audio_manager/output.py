@@ -1,5 +1,4 @@
 import typing
-import collections
 import uuid
 import audio
 from . import exception
@@ -67,12 +66,21 @@ class MultiplexedOutput(object):
         self._source = source
 
 
+class Output(object):
+
+    __slots__ = ('id', 'display_name', 'output')
+
+    def __init__(self, id_, display_name, output):
+        self.id = id_
+        self.display_name = display_name
+        self.output = output
+
+
 class Outputs(object):
     """
     A static manager for the created outputs for this process
     """
 
-    Output = collections.namedtuple('Output', ['id', 'display_name', 'output'])
     _outputs = []
 
     @classmethod
@@ -91,12 +99,12 @@ class Outputs(object):
         :param output:  The output instance to add
         :return:  The newly wrapped output object
         """
-        output = cls.Output(str(uuid.uuid4()), display_name, output)
+        output = Output(str(uuid.uuid4()), display_name, output)
         cls._outputs.append(output)
         return output
 
     @classmethod
-    def get_output(cls, output: str) -> Output:
+    def get_output(cls, output: typing.Union[str, Output]) -> Output:
         """
         Get the Output class for the given output
         :param output:  The output or output ID

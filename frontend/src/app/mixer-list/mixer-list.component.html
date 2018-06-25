@@ -1,3 +1,9 @@
-<p>
-  mixer-list works!
-</p>
+<div class="mixer-list">
+  <h1>Mixers</h1>
+  <app-mixer *ngFor="let mixer of mixers" [input_id]="mixer.id"></app-mixer>
+  <button mat-mini-fab class="add-button"
+          matTooltip="Add a mixer" matTooltipPosition="before"
+          (click)="newMixer()">
+    <mat-icon>add</mat-icon>
+  </button>
+</div>

@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { AvailableInputsService } from '../available-inputs.service';
 import * as io from 'socket.io-client';
 
 class Input {
@@ -35,15 +36,16 @@ export class InputListComponent implements OnInit {
 
   private socket: SocketIOClient.Socket;
 
-  constructor(private http: HttpClient, private dialog: MatDialog) { }
+  constructor(private http: HttpClient, private dialog: MatDialog, private inputService: AvailableInputsService) { }
 
   ngOnInit() {
     this.socket = io();
-    // For some reason in this special case, this goes out of scope??
     let that = this;
     this.http.get<Array<Input>>('/audio/input').subscribe((data: Array<Input>) => {
       data.forEach(function (input) {
-        that.inputs.push(new Input().deserialise(input));
+        let new_input = new Input().deserialise(input);
+        that.inputs.push(new_input);
+        that.inputService.addInput(new_input.id, new_input.display_name);
       });
     });
   }
@@ -58,7 +60,12 @@ export class InputListComponent implements OnInit {
       if (index > -1) {
          this.inputs.splice(index, 1);
       }
+      this.inputService.removeInput(input.id);
     });
+  }
+
+  changeName(input: Input, name: string): void {
+    this.http.put('/audio/input/' + input.id, {'display_name': name}).subscribe();
   }
 
 }
@@ -74,7 +81,8 @@ export class NewInputDialog implements OnInit {
   constructor(
     private http: HttpClient,
     private dialog: MatDialogRef<NewInputDialog>,
-    @Inject(MAT_DIALOG_DATA) private data: any)
+    @Inject(MAT_DIALOG_DATA) private data: any,
+    private inputService: AvailableInputsService)
   { }
 
   ngOnInit() {
@@ -89,7 +97,9 @@ export class NewInputDialog implements OnInit {
 
   private newDeviceHandler(inputs: Array<Input>): void {
     inputs.forEach((input: Input) => {
-      this.data.parent.inputs.push(new Input().deserialise(input));
+      let new_input = new Input().deserialise(input);
+      this.data.parent.inputs.push(new_input);
+      this.inputService.addInput(new_input.id, new_input.display_name);
     });
     this.dialog.close();
   }

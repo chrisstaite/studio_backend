@@ -50,3 +50,5 @@ The current implementation has the following functionality implemented in the ba
  - Hosting an Angular server
  - Adding outputs in the UI
  - Adding inputs in the UI
+ - Creating mixers in the UI
+ - Assigning inputs to outputs and mixer channels

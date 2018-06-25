@@ -1,0 +1,23 @@
+
+.channel {
+  float: left;
+}
+
+.channels {
+  overflow: auto;
+}
+
+.channels::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.add-button {
+  position: absolute;
+  bottom: 0;
+}
+
+.slider {
+  text-align: center;
+}
