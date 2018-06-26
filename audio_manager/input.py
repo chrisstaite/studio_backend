@@ -1,8 +1,9 @@
 import typing
 import uuid
 import audio
+import settings
 from . import exception
-from . import mixer
+from . import persist
 
 
 class Input(object):
@@ -40,6 +41,15 @@ class Inputs(object):
         """
         input_ = Input(str(uuid.uuid4()), display_name, input_)
         cls._inputs.append(input_)
+        session = persist.Session()
+        session.add(persist.Input(
+            id=input_.id,
+            display_name=display_name,
+            type=persist.InputTypes.device,
+            parameters=input_.input.name
+        ))
+        session.commit()
+        session.close()
         return input_
 
     @classmethod
@@ -81,6 +91,24 @@ class Inputs(object):
         if input_.input.has_callbacks():
             raise exception.InUseException('Input has current outputs')
         cls._inputs.remove(input_)
+        session = persist.Session()
+        session.query(persist.Input).filter_by(id=input_.id).delete()
+        session.commit()
+        session.close()
+
+    @classmethod
+    def restore(cls):
+        """
+        Restore the inputs from the database
+        """
+        session = persist.Session()
+        for sql_input in session.query(persist.Input).all():
+            input_object = None
+            if sql_input.type == persist.InputTypes.device:
+                input_object = audio.input_device.InputDevice(sql_input.parameters, settings.BLOCK_SIZE)
+            input_ = Input(sql_input.id, sql_input.display_name, input_object)
+            cls._inputs.append(input_)
+        session.close()
 
 
 def get_input(input_id: str):
@@ -98,6 +126,7 @@ def get_input(input_id: str):
         return Inputs.get_input(input_id).input
     except ValueError:
         pass
+    from . import mixer
     # Look for another mixer next
     return mixer.Mixers.get_mixer(input_id).mixer
     # TODO: Add a playlist source lookup
@@ -118,6 +147,10 @@ def get_input_id(input_) -> str:
         return Inputs.get_input(input_).id
     except ValueError:
         pass
+    from . import mixer
     # Look for another mixer next
     return mixer.Mixers.get_mixer(input_).id
     # TODO: Add a playlist source lookup
+
+
+Inputs.restore()

@@ -4,6 +4,7 @@ import settings
 import uuid
 import numpy
 from . import exception
+from . import persist
 
 
 class Channel(object):
@@ -11,11 +12,13 @@ class Channel(object):
     A channel for a mixer that can have an input assigned to it
     """
 
-    def __init__(self, mixer: audio.mixer.Mixer):
+    def __init__(self, channel_id: str, mixer: audio.mixer.Mixer):
         """
         Create a channel for a given mixer
+        :param channel_id:  The ID of this channel for persistence
         :param mixer:  The mixer to create the channel for
         """
+        self._channel_id = channel_id
         self._mixer = mixer
         self._volume = 1.0
         self._source = None
@@ -43,6 +46,12 @@ class Channel(object):
             self._mixer.add_input(source)
             self._source = source
             self._mixer.set_volume(source, self._volume)
+        from . import input
+        session = persist.Session()
+        channel = session.query(persist.MixerChannel).filter_by(id=self._channel_id).one()
+        channel.input = input.get_input_id(source)
+        session.commit()
+        session.close()
 
     @property
     def volume(self) -> float:
@@ -63,6 +72,11 @@ class Channel(object):
         if self._source is not None:
             self._mixer.set_volume(self._source, volume)
         self._volume = volume
+        session = persist.Session()
+        channel = session.query(persist.MixerChannel).filter_by(id=self._channel_id).one()
+        channel.volume = volume
+        session.commit()
+        session.close()
 
 
 class ChannelMixer(object):
@@ -70,11 +84,13 @@ class ChannelMixer(object):
     A wrapper around a mixer to handle it in channels rather than inputs
     """
 
-    def __init__(self, channels: int):
+    def __init__(self, mixer_id: str, channels: int):
         """
         Create a new mixer
+        :param mixer_id:  The ID of the mixer used for persistence of the channels
         :param channels:  The number of output channels of the mixer (i.e. 2 for stereo)
         """
+        self._mixer_id = mixer_id
         self._mixer = audio.mixer.Mixer(settings.BLOCK_SIZE, channels)
         self._channels = {}
 
@@ -119,9 +135,13 @@ class ChannelMixer(object):
         Add a new channel to the mixer
         :return:  The new channel ID
         """
-        new_channel = Channel(self._mixer)
         id_ = str(uuid.uuid4())
+        new_channel = Channel(id_, self._mixer)
         self._channels[id_] = new_channel
+        session = persist.Session()
+        session.add(persist.MixerChannel(id=id_, mixer=self._mixer_id, input='', volume=1.0))
+        session.commit()
+        session.close()
         return id_
 
     def remove_channel(self, channel_id: str) -> None:
@@ -132,6 +152,10 @@ class ChannelMixer(object):
         """
         self._channels[channel_id].input = None
         del self._channels[channel_id]
+        session = persist.Session()
+        session.query(persist.MixerChannel).filter_by(id=channel_id).delete()
+        session.commit()
+        session.close()
 
     def has_callbacks(self) -> bool:
         """
@@ -153,6 +177,18 @@ class ChannelMixer(object):
         :param callback:  The callback to remove
         """
         self._mixer.remove_callback(callback)
+
+    def restore(self, channels: typing.Iterable[persist.MixerChannel]):
+        """
+        Restore mixer channels from the database
+        :param channels:  The channels to set for this mixer
+        """
+        from . import input
+        for channel in channels:
+            new_channel = Channel(channel.id, self._mixer)
+            self._channels[channel.id] = new_channel
+            new_channel.volume = channel.volume
+            new_channel.input = input.get_input(channel.input)
 
 
 class Mixer(object):
@@ -184,9 +220,15 @@ class Mixers(object):
         :param channels:  The number of output channels
         :return:  The newly created Mixers.Mixer instance
         """
-        mixer = ChannelMixer(channels)
-        mixer = Mixer(str(uuid.uuid4()), display_name, mixer)
+        id_ = str(uuid.uuid4())
+        mixer = ChannelMixer(id_, channels)
+        mixer = Mixer(id_, display_name, mixer)
         cls._mixers.append(mixer)
+        session = persist.Session()
+        sql_mixer = persist.Mixer(id=mixer.id, display_name=display_name, output_channels=channels)
+        session.add(sql_mixer)
+        session.commit()
+        session.close()
         return mixer
 
     @classmethod
@@ -215,3 +257,25 @@ class Mixers(object):
         for i in range(mixer.mixer.get_channel_count()):
             mixer.mixer.get_channel(i).input = None
         cls._mixers.remove(mixer)
+        session = persist.Session()
+        session.query(persist.Mixer).filter_by(id=mixer.id).delete()
+        session.query(persist.MixerChannel).filter_by(mixer=mixer.id).delete()
+        session.commit()
+        session.close()
+
+    @classmethod
+    def restore(cls):
+        """
+        Restore the mixers in the persistence database
+        """
+        session = persist.Session()
+        for sql_mixer in session.query(persist.Mixer).all():
+            mixer = ChannelMixer(sql_mixer.id, sql_mixer.output_channels)
+            mixer = Mixer(sql_mixer.id, sql_mixer.display_name, mixer)
+            cls._mixers.append(mixer)
+        for mixer in cls._mixers:
+            mixer.restore(session.query(persist.MixerChannel).filter_by(mixer=mixer.id))
+        session.close()
+
+
+Mixers.restore()

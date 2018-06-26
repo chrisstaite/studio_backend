@@ -1,7 +1,10 @@
 import typing
 import uuid
 import audio
+import settings
+import json
 from . import exception
+from . import persist
 
 
 class MultiplexedOutput(object):
@@ -36,12 +39,28 @@ class MultiplexedOutput(object):
         return self._channels
 
     @property
+    def offset(self) -> int:
+        """
+        Get the offset into the multiplexer that this represents
+        :return:  The offset into the multiplexer
+        """
+        return self._offset
+
+    @property
     def parent(self) -> audio.output_device.OutputDevice:
         """
         Get the output device that the multiplexer outputs to
         :return:  The output device
         """
         return self._parent
+
+    @property
+    def multiplex(self) -> audio.multiplex.Multiplex:
+        """
+        Get the multiplexer that this output is using
+        :return:  The multiplexer
+        """
+        return self._multiplex
 
     @property
     def input(self):
@@ -67,6 +86,9 @@ class MultiplexedOutput(object):
 
 
 class Output(object):
+    """
+    A wrapper around an output for the ID and display name
+    """
 
     __slots__ = ('id', 'display_name', 'output')
 
@@ -99,8 +121,38 @@ class Outputs(object):
         :param output:  The output instance to add
         :return:  The newly wrapped output object
         """
+        from . import input
         output = Output(str(uuid.uuid4()), display_name, output)
         cls._outputs.append(output)
+        type_ = None
+        parameters = None
+        if isinstance(output.output, audio.output_device.OutputDevice):
+            type_ = persist.OutputTypes.device
+            parameters = output.output.name
+        elif isinstance(output.output, audio.icecast.Icecast):
+            type_ = persist.OutputTypes.icecast
+            parameters = json.dumps({
+                'endpoint': output.output.endpoint,
+                'password': output.output.password
+            })
+        elif isinstance(output.output, MultiplexedOutput):
+            type_ = persist.OutputTypes.multiplex
+            parameters = json.dumps({
+                'parent': cls.get_output_device(output.output.parent.name).id,
+                'channels': output.output.channels,
+                'offset': output.output.offset
+            })
+        if type_ is not None:
+            session = persist.Session()
+            session.add(persist.Output(
+                id=output.id,
+                display_name=display_name,
+                type=type_,
+                input=input.get_input_id(output.output.input),
+                parameters=parameters
+            ))
+            session.commit()
+            session.close()
         return output
 
     @classmethod
@@ -160,8 +212,50 @@ class Outputs(object):
         if output.output.input is not None:
             raise exception.InUseException('Output in use')
         cls._outputs.remove(output)
+        session = persist.Session()
+        session.query(persist.Output).filter_by(id=output.id).delete()
+        session.commit()
+        session.close()
         # If all the multiplexers are removed, then remove the multiplex device
         if isinstance(output.output, MultiplexedOutput):
             if not any(x.output.parent == output.output.parent
                        for x in cls._outputs if isinstance(x.output, MultiplexedOutput)):
                 output.output.parent.input = None
+
+    @classmethod
+    def restore(cls):
+        """
+        Restore the outputs from the database
+        """
+        session = persist.Session()
+        from . import input
+        for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.device).all():
+            output_object = audio.output_device.OutputDevice(sql_input.parameters, settings.BLOCK_SIZE)
+            output = Output(sql_input.id, sql_input.display_name, output_object)
+            cls._outputs.append(output)
+            output_object.input = input.get_input(sql_input.input)
+        for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.icecast).all():
+            output_object = audio.icecast.Icecast()
+            parameters = json.loads(sql_input.parameters)
+            output_object.connect(parameters['endpoint'], parameters['password'])
+            output = Output(sql_input.id, sql_input.display_name, output_object)
+            cls._outputs.append(output)
+            output_object.input = input.get_input(sql_input.input)
+        for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.multiplex).all():
+            parameters = json.loads(sql_input.parameters)
+            parent = cls.get_output(parameters['parent']).output
+            multiplex = None
+            for other_output in cls._outputs:
+                if isinstance(other_output.output, MultiplexedOutput) and other_output.output.parent is parent:
+                    multiplex = other_output.output.multiplex
+            if multiplex is None:
+                multiplex = audio.multiplex.Multiplex(parent.channels, settings.BLOCK_SIZE)
+                parent.input = multiplex
+            output_object = MultiplexedOutput(parent, multiplex, parameters['channels'], parameters['offset'])
+            output = Output(sql_input.id, sql_input.display_name, output_object)
+            cls._outputs.append(output)
+            output_object.input = input.get_input(sql_input.input)
+        session.close()
+
+
+Outputs.restore()

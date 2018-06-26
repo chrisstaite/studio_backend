@@ -22,6 +22,7 @@ class Icecast(object):
         self._socket = None
         self._source = None
         self._endpoint = None
+        self._password = None
         # Icecast doesn't actually support chunked encoding
         self._chunk = False
 
@@ -34,6 +35,10 @@ class Icecast(object):
     @property
     def endpoint(self) -> str:
         return self._endpoint
+
+    @property
+    def password(self) -> str:
+        return self._password
 
     @staticmethod
     def _socket_connect(endpoint: urllib.parse.ParseResult) -> typing.Union[ssl.SSLSocket, socket.socket]:
@@ -114,6 +119,7 @@ class Icecast(object):
         :return:  True if the server is now accepting the stream, False if it fails
         """
         self._endpoint = endpoint
+        self._password = password
         endpoint = urllib.parse.urlparse(endpoint)
         try:
             connection = self._socket_connect(endpoint)

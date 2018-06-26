@@ -61,6 +61,7 @@ class Server(object):
                 '--aot',
                 '--base-href', '/frontend/',
                 '--watch',
+                # TODO: Enable production mode
                 # '--prod', '--configuration', 'production'
             ],
             cwd=frontend

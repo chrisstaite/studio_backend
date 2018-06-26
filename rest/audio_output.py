@@ -209,6 +209,8 @@ class Output(flask_restful.Resource):
             socketio.emit('output_update', {'id': output.id, 'display_name': output.display_name})
         if args['input'] is not None:
             try:
+                if isinstance(output.output.input, audio_manager.output.MultiplexedOutput):
+                    flask_restful.abort(400, message='Input is multiplexed, can\'t be re-assigned')
                 output.output.input = audio_manager.input.get_input(args['input'])
                 socketio.emit('output_update', {'id': output.id, 'input': args['input']})
             except ValueError:
