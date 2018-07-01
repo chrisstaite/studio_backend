@@ -13,7 +13,10 @@ import {
   MatInputModule,
   MatSelectModule,
   MatGridListModule,
-  MatSliderModule
+  MatSliderModule,
+  MatTreeModule,
+  MatProgressBarModule,
+  MatListModule
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
@@ -22,6 +25,8 @@ import { OutputListComponent, NewOutputDialog } from './output-list/output-list.
 import { MixerListComponent } from './mixer-list/mixer-list.component';
 import { MixerComponent } from './mixer/mixer.component';
 import { BrowserPlaybackComponent } from './browser-playback/browser-playback.component';
+import { DirectoryPickerComponent } from './directory-picker/directory-picker.component';
+import { LibraryComponent, LibraryRootsDialog } from './library/library.component';
 
 @NgModule({
   declarations: [
@@ -32,11 +37,16 @@ import { BrowserPlaybackComponent } from './browser-playback/browser-playback.co
     NewOutputDialog,
     MixerListComponent,
     MixerComponent,
-    BrowserPlaybackComponent
+    BrowserPlaybackComponent,
+    DirectoryPickerComponent,
+    LibraryComponent,
+    LibraryRootsDialog
   ],
   entryComponents: [
     NewInputDialog,
-    NewOutputDialog
+    NewOutputDialog,
+    LibraryRootsDialog,
+    DirectoryPickerComponent
   ],
   imports: [
     BrowserModule,
@@ -51,7 +61,10 @@ import { BrowserPlaybackComponent } from './browser-playback/browser-playback.co
     MatInputModule,
     MatSelectModule,
     MatGridListModule,
-    MatSliderModule
+    MatSliderModule,
+    MatTreeModule,
+    MatProgressBarModule,
+    MatListModule
   ],
   providers: [],
   bootstrap: [AppComponent]

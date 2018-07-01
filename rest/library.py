@@ -73,7 +73,7 @@ class Track(flask_restful.Resource):
         args = self._parser.parse_args(strict=True)
         tracks = library.Tracks(args['tracks'], args['query'])
         return {
-            'pages': len(tracks),
+            'count': tracks.count(),
             'tracks': [
                 {
                     'id': track.id, 'location': track.location, 'title': track.title, 'artist': track.artist
@@ -112,15 +112,17 @@ class Filesystem(flask_restful.Resource):
                 # Optimised implementation for 3.5+
                 with os.scandir(location) as it:
                     for entry in it:
-                        if entry.is_dir():
+                        if entry.is_dir() and not entry.name.startswith('.'):
                             yield entry.name
             else:
                 # Stupid implementation that has to do a lot of work
                 for path in os.listdir(location):
-                    if os.path.isdir(os.path.join(location, path)):
+                    if not path.startswith('.') and os.path.isdir(os.path.join(location, path)):
                         yield path
         except (FileNotFoundError, NotADirectoryError):
             flask_restful.abort(404, message='Directory does not exist')
+        except PermissionError:
+            flask_restful.abort(403, message='Inaccessible directory')
 
     def get(self, location: str = None) -> typing.List[str]:
         """
@@ -135,9 +137,12 @@ class Filesystem(flask_restful.Resource):
             else:
                 # Need to add the colon back in for the search to work
                 location = location[0] + ":" + location[1:]
-        elif location is None:
+        else:
             # Every other system is sane
-            location = '/'
+            if location is None:
+                location = '/'
+            else:
+                location = '/' + location
         return list(self._list_dirs(location))
 
 

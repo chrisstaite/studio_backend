@@ -25,6 +25,13 @@ class Tracks(object):
         self._count = self._query.count()
         self._results = results
 
+    def count(self) -> int:
+        """
+        Get the total number of results
+        :return:  The total number of results
+        """
+        return self._count
+
     def __len__(self) -> int:
         """
         Get the total number of pages

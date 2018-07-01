@@ -14,9 +14,9 @@ class Track(Base):
     # The location of the file
     location = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     # The artist of the track
-    artist = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    artist = sqlalchemy.Column(sqlalchemy.String)
     # The title of the track
-    title = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    title = sqlalchemy.Column(sqlalchemy.String)
 
 
 class TrackTags(Base):

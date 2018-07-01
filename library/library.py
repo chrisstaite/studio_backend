@@ -24,7 +24,6 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         threading.Thread(target=self._walk, daemon=True).start()
         self._directory_observer = watchdog.observers.Observer()
         self._directory_observer.schedule(self, self._directory, recursive=True)
-        self._directory_observer.start()
 
     @property
     def directory(self) -> str:
@@ -46,11 +45,12 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         """
         Walk over all the files in this directory recursively to check they are in the library
         """
-        for _, _, filenames in os.walk(self._directory):
+        for path, _, filenames in os.walk(self._directory):
             for filename in filenames:
                 if not self._scan:
                     return
-                self._parse_file(filename)
+                self._parse_file(os.path.join(path, filename))
+        self._directory_observer.start()
 
     def on_moved(self, event: typing.Union[watchdog.events.DirMovedEvent, watchdog.events.FileMovedEvent]):
         """
@@ -113,7 +113,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         try:
             audioread.audio_open(filename).close()
             valid = True
-        except audioread.NoBackendError:
+        except:
             valid = False
         if valid:
             try:
