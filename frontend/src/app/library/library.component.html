@@ -4,4 +4,20 @@
           (click)="libraryRoots()">
     <mat-icon>library_music</mat-icon>
   </button>
+  <mat-form-field>
+    <input matInput placeholder="Search" [value]="query" #queryInput (keyup)="query = queryInput.value">
+    <button mat-button *ngIf="query" matSuffix mat-icon-button aria-label="Clear" (click)="query=''">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+  <mat-list>
+    <mat-list-item *ngFor="let song of songs" [matTooltip]="song.location" matTooltipPosition="below">
+      {{ song.artist }} - {{ song.title }}
+    </mat-list-item>
+  </mat-list>
+  <mat-paginator [length]="songCount"
+                 [pageSize]="pageSize"
+                 [pageSizeOptions]="[5, 10, 25, 100]"
+                 (page)="pageSize = $event.pageSize; page = $event.pageIndex;">
+  </mat-paginator>
 </div>

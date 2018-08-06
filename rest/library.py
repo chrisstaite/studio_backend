@@ -71,7 +71,7 @@ class Track(flask_restful.Resource):
         :return:  A list of all tracks matching
         """
         args = self._parser.parse_args(strict=True)
-        tracks = library.Tracks(args['tracks'], args['query'])
+        tracks = library.Tracks(args['results'], args['query'])
         return {
             'count': tracks.count(),
             'tracks': [

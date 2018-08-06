@@ -1,4 +1,5 @@
 import os.path
+import datetime
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 
@@ -17,6 +18,15 @@ class Track(Base):
     artist = sqlalchemy.Column(sqlalchemy.String)
     # The title of the track
     title = sqlalchemy.Column(sqlalchemy.String)
+
+
+class TrackPlay(Base):
+    __tablename__ = 'track_play'
+
+    # The ID of the track
+    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), primary_key=True)
+    # The time and date it was played
+    time = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
 
 
 class TrackTags(Base):

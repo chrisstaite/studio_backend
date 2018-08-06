@@ -99,7 +99,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
             try:
                 file = eyed3.load(filename)
                 artist = file.tag.artist
-                title = file.tag.artist
+                title = file.tag.title
             except:
                 artist = ''
                 title = ''
