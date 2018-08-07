@@ -5,8 +5,38 @@ import { DirectoryPickerService } from '../directory-picker.service';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
+enum SongState {
+  Stopped,
+  Loading,
+  Playing
+};
+
 class Song {
+
+  _SongState = SongState;
+
+  state: SongState = SongState.Stopped;
+
   constructor(public id: number, public title: string, public artist: string, public location: string) { }
+
+  play(element) {
+    this.state = SongState.Loading;
+    element.src = '/library/track/' + this.id;
+    element.load();
+    let promise = element.play();
+    if (promise !== undefined) {
+      promise.then(_ => {
+        this.state = SongState.Playing;
+      }).catch(error => {
+        this.state = SongState.Stopped;
+      });
+    }
+  }
+
+  stop(element) {
+    this.state = SongState.Stopped;
+    element.src = '';
+  }
 }
 
 @Component({
@@ -22,6 +52,8 @@ export class LibraryComponent implements OnInit {
   private _updateDebounce: Subject<void> = new Subject<void>();
   private _pageSize: number = 10;
   private _page: number = 0;
+  private _currentSong: Song = null;
+  private _playbackElement: any = new Audio();
 
   constructor(private dialog: MatDialog, private http: HttpClient) {
     this._updateDebounce.pipe(debounceTime(200)).subscribe(() => this._updateList());
@@ -29,6 +61,19 @@ export class LibraryComponent implements OnInit {
 
   ngOnInit() {
     this._updateDebounce.next();
+  }
+
+  set currentSong(song: Song) {
+    if (song == this._currentSong) {
+      this._currentSong.stop(this._playbackElement);
+      this._currentSong = null;
+    } else {
+      if (this._currentSong != null) {
+        this._currentSong.stop(this._playbackElement);
+      }
+      this._currentSong = song;
+      this._currentSong.play(this._playbackElement);
+    }
   }
 
   get query(): string {

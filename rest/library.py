@@ -1,5 +1,7 @@
 import os
 import typing
+import flask
+import mimetypes
 import flask_restful.reqparse
 import library
 
@@ -45,7 +47,7 @@ class Library(flask_restful.Resource):
         return True
 
 
-class Track(flask_restful.Resource):
+class TrackSearch(flask_restful.Resource):
     """
     Handler searching for tracks within the library
     """
@@ -80,6 +82,29 @@ class Track(flask_restful.Resource):
                 } for track in tracks[args['page']]
             ]
         }
+
+
+class Track(flask_restful.Resource):
+    """
+    Handler for playing tracks
+    """
+
+    def get(self, id) -> typing.Dict:
+        """
+        Get a list of all the tracks matching the query
+        :return:  A list of all tracks matching
+        """
+        def generate(track_):
+            with open(track_.location, 'rb') as file_:
+                data = file_.read(1024)
+                while data:
+                    yield data
+                    data = file_.read(1024)
+        track = library.Tracks.get_track(id)
+        mimetype, encoding = mimetypes.guess_type(track.location)
+        if mimetype is None:
+            mimetype = 'audio/mpeg'
+        return flask.Response(generate(track), mimetype=mimetype)
 
 
 class Filesystem(flask_restful.Resource):
@@ -153,4 +178,8 @@ def setup_api(api):
     """
     api.add_resource(Filesystem, '/browse', '/browse/<path:location>')
     api.add_resource(Library, '/library')
-    api.add_resource(Track, '/library/track')
+    api.add_resource(TrackSearch, '/library/track')
+    api.add_resource(Track, '/library/track/<int:id>')
+
+
+mimetypes.init()

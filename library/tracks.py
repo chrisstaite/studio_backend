@@ -8,6 +8,19 @@ class Tracks(object):
     An accessor for searching tracks
     """
 
+    @staticmethod
+    def get_track(id: int) -> database.Track:
+        """
+        Get a track for the given ID
+        :param id:  The ID of the track to get
+        :return:  The track
+        """
+        session = database.Session()
+        try:
+            return session.query(database.Track).get(id)
+        finally:
+            session.close()
+
     def __init__(self, results: int, query: str = None):
         """
         Start a query for a given track

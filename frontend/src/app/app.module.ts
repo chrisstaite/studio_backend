@@ -17,7 +17,8 @@ import {
   MatTreeModule,
   MatProgressBarModule,
   MatListModule,
-  MatPaginatorModule
+  MatPaginatorModule,
+  MatProgressSpinnerModule
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
@@ -66,7 +67,8 @@ import { LibraryComponent, LibraryRootsDialog } from './library/library.componen
     MatTreeModule,
     MatProgressBarModule,
     MatListModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatProgressSpinnerModule
   ],
   providers: [],
   bootstrap: [AppComponent]

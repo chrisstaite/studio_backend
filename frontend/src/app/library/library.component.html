@@ -11,9 +11,17 @@
     </button>
   </mat-form-field>
   <mat-list>
-    <mat-list-item *ngFor="let song of songs" [matTooltip]="song.location" matTooltipPosition="below">
-      {{ song.artist }} - {{ song.title }}
-    </mat-list-item>
+    <ng-template ngFor let-song [ngForOf]="songs">
+      <mat-list-item class="song">
+        <button mat-mini-fab [matTooltip]="song.location" matTooltipPosition="after" (click)="currentSong = song">
+          <mat-icon *ngIf="song.state == song._SongState.Stopped">play_arrow</mat-icon>
+          <mat-spinner diameter="25" *ngIf="song.state == song._SongState.Loading"></mat-spinner>
+          <mat-icon *ngIf="song.state == song._SongState.Playing">pause</mat-icon>
+        </button>
+        <span>{{ song.artist }} - {{ song.title }}</span>
+      </mat-list-item>
+      <mat-divider></mat-divider>
+    </ng-template>
   </mat-list>
   <mat-paginator [length]="songCount"
                  [pageSize]="pageSize"
