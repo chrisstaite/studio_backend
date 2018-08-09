@@ -3,23 +3,43 @@ import sqlalchemy
 from . import database
 
 
+class Track(object):
+    """
+    An accessor for updating a track
+    """
+
+    def __init__(self, id):
+        """
+        Open a track or editing
+        :param id:  The ID of the track
+        """
+        session = database.Session()
+        self.__dict__['_session'] = session
+        self.__dict__['_track'] = session.query(database.Track).get(id)
+
+    def __getattr__(self, item):
+        """
+        Get an attribute from the underlying object
+        :param item:  The name of the attribute to get
+        :return:  The underlying attribute
+        """
+        return getattr(self.__dict__['_track'], item)
+
+    def __setattr__(self, key, value):
+        """
+        Set an attribute on the underlying object
+        :param key:  The item to update
+        :param value:  The value to set
+        """
+        track = self.__dict__['_track']
+        setattr(track, key, value)
+        self.__dict__['_session'].commit()
+
+
 class Tracks(object):
     """
     An accessor for searching tracks
     """
-
-    @staticmethod
-    def get_track(id: int) -> database.Track:
-        """
-        Get a track for the given ID
-        :param id:  The ID of the track to get
-        :return:  The track
-        """
-        session = database.Session()
-        try:
-            return session.query(database.Track).get(id)
-        finally:
-            session.close()
 
     def __init__(self, results: int, query: str = None):
         """

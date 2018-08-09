@@ -1,31 +1,118 @@
 <div class="library">
-  <button mat-mini-fab class="roots"
-          matTooltip="Manage the root directories" matTooltipPosition="before"
-          (click)="libraryRoots()">
-    <mat-icon>library_music</mat-icon>
-  </button>
-  <mat-form-field>
-    <input matInput placeholder="Search" [value]="query" #queryInput (keyup)="query = queryInput.value">
-    <button mat-button *ngIf="query" matSuffix mat-icon-button aria-label="Clear" (click)="query=''">
-      <mat-icon>close</mat-icon>
-    </button>
-  </mat-form-field>
-  <mat-list>
-    <ng-template ngFor let-song [ngForOf]="songs">
-      <mat-list-item class="song">
-        <button mat-mini-fab [matTooltip]="song.location" matTooltipPosition="after" (click)="currentSong = song">
-          <mat-icon *ngIf="song.state == song._SongState.Stopped">play_arrow</mat-icon>
-          <mat-spinner diameter="25" *ngIf="song.state == song._SongState.Loading"></mat-spinner>
-          <mat-icon *ngIf="song.state == song._SongState.Playing">pause</mat-icon>
+  <mat-card>
+    <mat-card-title>Library</mat-card-title>
+    <mat-card-content>
+      <mat-form-field>
+        <input matInput placeholder="Search" [value]="query" #queryInput (keyup)="query = queryInput.value">
+        <button mat-button *ngIf="query" matSuffix mat-icon-button aria-label="Clear" (click)="query=''">
+          <mat-icon>close</mat-icon>
         </button>
-        <span>{{ song.artist }} - {{ song.title }}</span>
-      </mat-list-item>
-      <mat-divider></mat-divider>
-    </ng-template>
-  </mat-list>
-  <mat-paginator [length]="songCount"
-                 [pageSize]="pageSize"
-                 [pageSizeOptions]="[5, 10, 25, 100]"
-                 (page)="pageSize = $event.pageSize; page = $event.pageIndex;">
-  </mat-paginator>
+      </mat-form-field>
+      <table mat-table class="library-table" [dataSource]="songs">
+        <ng-container matColumnDef="play">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let song">
+            <div class="flex-group">
+              <button mat-icon-button [color]="currentEdit == song ? 'accent' : 'primary'"
+                      (click)="saveSong(); currentEdit = (currentEdit == song) ? null : song; $event.stopPropagation();">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-mini-fab
+                      [matTooltip]="song.location"
+                      matTooltipPosition="after"
+                      (click)="currentSong = song; $event.stopPropagation();">
+                <mat-icon *ngIf="song.state == song._SongState.Stopped">play_arrow</mat-icon>
+                <mat-spinner diameter="25" *ngIf="song.state == song._SongState.Loading"></mat-spinner>
+                <mat-icon *ngIf="song.state == song._SongState.Playing">pause</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="artist">
+          <th mat-header-cell *matHeaderCellDef>Artist</th>
+          <td mat-cell *matCellDef="let song">
+            <span *ngIf="song != currentEdit">{{ song.artist }}</span>
+            <mat-form-field *ngIf="song == currentEdit">
+              <input matInput placeholder="Artist" [value]="song.artist"
+                     #songArtist (keyup)="song.artist = songArtist.value">
+            </mat-form-field>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Title</th>
+          <td mat-cell *matCellDef="let song">
+            <span *ngIf="song != currentEdit">{{ song.title }}</span>
+            <mat-form-field *ngIf="song == currentEdit">
+              <input matInput placeholder="Title" [value]="song.title"
+                     #songTitle (keyup)="song.title = songTitle.value">
+            </mat-form-field></td>
+        </ng-container>
+        <ng-container matColumnDef="length">
+          <th mat-header-cell *matHeaderCellDef>Length</th>
+          <td mat-cell *matCellDef="let song">{{ song.length | songTime }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayColumns"></tr>
+        <tr mat-row *matRowDef="let song; columns: displayColumns;"
+            (click)="toggle(song)"
+            [ngClass]="{'selected': (selected.indexOf(song) > -1)}"></tr>
+      </table>
+      <mat-paginator [length]="songCount"
+                     [pageSize]="pageSize"
+                     [pageSizeOptions]="[5, 10, 25, 100]"
+                     (page)="pageSize = $event.pageSize; page = $event.pageIndex;">
+      </mat-paginator>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-mini-fab class="roots"
+              matTooltip="Manage the root directories" matTooltipPosition="before"
+              (click)="libraryRoots()">
+        <mat-icon>library_music</mat-icon>
+      </button>
+    </mat-card-actions>
+  </mat-card>
+  <mat-card>
+    <mat-card-title>Playlists</mat-card-title>
+    <mat-card-content>
+      <mat-select placeholder="Playlist">
+        <mat-option *ngFor="let p of playlists" [value]="p.id" (click)="playlist = p">
+          {{ p.name }}
+        </mat-option>
+        <mat-option (click)="newPlaylist()">
+          New
+        </mat-option>
+      </mat-select>
+
+      <div *ngIf="playlist">
+        <button mat-icon-button [disabled]="selected.length == 0"
+                (click)="playlist.add(selected); selected = []">
+          <mat-icon>add</mat-icon>
+        </button>
+        <button mat-icon-button [disabled]="playlistSelected.length == 0"
+                (click)="playlist.remove(playlistSelected); playlistSelected = []">
+          <mat-icon>remove</mat-icon>
+        </button>
+      </div>
+
+      <table mat-table *ngIf="playlist" [dataSource]="playlist.tracks">
+        <ng-container matColumnDef="artist">
+          <th mat-header-cell *matHeaderCellDef>Artist</th>
+          <td mat-cell *matCellDef="let song">{{ song.artist }}</td>
+        </ng-container>
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Title</th>
+          <td mat-cell *matCellDef="let song">{{ song.title }}</td>
+        </ng-container>
+        <ng-container matColumnDef="length">
+          <th mat-header-cell *matHeaderCellDef>Length</th>
+          <td mat-cell *matCellDef="let song">{{ song.length | songTime }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="playlistDisplayColumns"></tr>
+        <tr mat-row *matRowDef="let song; columns: playlistDisplayColumns;"
+            (click)="playlistToggle(song)"
+            [ngClass]="{'selected': (playlistSelected.indexOf(song) > -1)}"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
 </div>

@@ -1,3 +1,21 @@
-.song span {
-  padding-left: 10px;
+.library {
+  display: flex;
+}
+mat-card {
+  width: 50%;
+}
+table {
+  width: 100%;
+}
+td button {
+  margin: 0 10px;
+}
+tr.selected {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.flex-group {
+  display: flex;
+}
+.library-table td.mat-cell:first-child {
+  padding-left: 0;
 }

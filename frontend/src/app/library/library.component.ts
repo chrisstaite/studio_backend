@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { DirectoryPickerService } from '../directory-picker.service';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 enum SongState {
@@ -17,7 +17,11 @@ class Song {
 
   state: SongState = SongState.Stopped;
 
-  constructor(public id: number, public title: string, public artist: string, public location: string) { }
+  constructor(public id: number,
+              public title: string,
+              public artist: string,
+              public location: string,
+              public length: number) { }
 
   play(element) {
     this.state = SongState.Loading;
@@ -39,6 +43,61 @@ class Song {
   }
 }
 
+class Playlist {
+
+  private _tracks: Array<Song>;
+  private _tracksSubject: Subject<Array<Song>> = new Subject<Array<Song>>();
+
+  constructor(public id: number, public name: string, private http: HttpClient) { }
+
+  load() {
+    this.http.get<any>('/playlist/' + this.id).subscribe((data: any) => {
+      this._tracks = data.map(function (track) {
+        return new Song(track.id, track.title, track.artist, track.location, track.length);
+      });
+      this._tracksSubject.next(this._tracks);
+    });
+  }
+
+  get tracks(): Observable<Array<Song>> {
+    return this._tracksSubject.asObservable();
+  }
+
+  add(tracks: Array<Song>) {
+    this._tracks.push(...tracks);
+    this._tracksSubject.next(this._tracks);
+    this._update();
+  }
+
+  remove(tracks: Array<Song>) {
+    tracks.forEach(track => {
+      let index = this._tracks.indexOf(track);
+      if (index > -1) {
+        this._tracks.splice(index, 1);
+      }
+    });
+    this._tracksSubject.next(this._tracks);
+    this._update();
+  }
+
+  private _update() {
+    let ids = this._tracks.map(track => track.id);
+    this.http.put('/playlist/' + this.id, {'tracks': ids}).subscribe();
+  }
+
+}
+
+@Pipe({
+  name: 'songTime'
+})
+export class SongTimePipe implements PipeTransform {
+    transform(value: number): string {
+       const minutes: number = Math.floor(value / 60);
+       const seconds: number = Math.round(value % 60);
+       return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+    }
+}
+
 @Component({
   selector: 'app-library',
   templateUrl: './library.component.html',
@@ -47,20 +106,72 @@ class Song {
 export class LibraryComponent implements OnInit {
 
   private _query: string = "";
-  private _songs: Array<Song> = [];
+  private _songs: Subject<Array<Song>> = new Subject<Array<Song>>();
   private _songCount: number = 0;
   private _updateDebounce: Subject<void> = new Subject<void>();
   private _pageSize: number = 10;
   private _page: number = 0;
   private _currentSong: Song = null;
   private _playbackElement: any = new Audio();
+  displayColumns: Array<string> = ['play', 'artist', 'title', 'length'];
+  playlistDisplayColumns: Array<string> = ['artist', 'title', 'length'];
+  playlists: Array<Playlist> = [];
+  selected: Array<Song> = [];
+  playlistSelected: Array<Song> = [];
+  currentEdit: Song;
+  private _playlist: Playlist;
 
   constructor(private dialog: MatDialog, private http: HttpClient) {
     this._updateDebounce.pipe(debounceTime(200)).subscribe(() => this._updateList());
   }
 
   ngOnInit() {
-    this._updateDebounce.next();
+    this._updateList();
+
+    this.http.get<any>('/playlist').subscribe((data: any) => {
+      let http = this.http;
+      this.playlists = data.map(function (playlist) {
+        return new Playlist(playlist.id, playlist.name, http);
+      });
+    });
+  }
+
+  saveSong() {
+    if (this.currentEdit) {
+      this.http.put(
+        '/library/track/' + this.currentEdit.id,
+        {'artist': this.currentEdit.artist, 'title': this.currentEdit.title}
+      ).subscribe();
+    }
+  }
+
+  toggle(song: Song) {
+    let index = this.selected.indexOf(song);
+    if (index > -1) {
+      this.selected.splice(index, 1);
+    } else {
+      this.selected.push(song);
+    }
+  }
+
+  playlistToggle(song: Song) {
+    let index = this.playlistSelected.indexOf(song);
+    if (index > -1) {
+      this.playlistSelected.splice(index, 1);
+    } else {
+      this.playlistSelected.push(song);
+    }
+  }
+
+  set playlist(playlist: Playlist) {
+    this._playlist = playlist;
+    if (this._playlist) {
+      this._playlist.load();
+    }
+  }
+
+  get playlist(): Playlist {
+    return this._playlist;
   }
 
   set currentSong(song: Song) {
@@ -92,8 +203,8 @@ export class LibraryComponent implements OnInit {
     }
   }
 
-  get songs(): Array<Song> {
-    return this._songs;
+  get songs(): Observable<Array<Song>> {
+    return this._songs.asObservable();
   }
 
   get page(): number {
@@ -125,15 +236,21 @@ export class LibraryComponent implements OnInit {
     }
     let httpParams = new HttpParams({ fromObject: query });
     this.http.get<any>('/library/track', {params: httpParams}).subscribe((data: any) => {
-      this._songs = data.tracks.map(function (track) {
-        return new Song(track.id, track.title, track.artist, track.location);
+      let songs = data.tracks.map(function (track) {
+        return new Song(track.id, track.title, track.artist, track.location, track.length);
       });
+      this.selected = [];
       this._songCount = data.count;
+      this._songs.next(songs);
     });
   }
 
   libraryRoots() {
-    this.dialog.open(LibraryRootsDialog, { data: {} });
+    this.dialog.open(LibraryRootsDialog);
+  }
+
+  newPlaylist() {
+    this.dialog.open(NewPlaylistDialog, { data: { parent: this } });
   }
 
 }
@@ -166,6 +283,34 @@ export class LibraryRootsDialog implements OnInit {
       this.http.post('/library', { 'directory': directory }).subscribe(() => {
         roots.push(directory);
       });
+    });
+  }
+
+}
+
+@Component({
+  templateUrl: './playlist-dialog.html',
+  styleUrls: ['./playlist-dialog.css']
+})
+export class NewPlaylistDialog implements OnInit {
+
+  constructor(
+    private http: HttpClient,
+    private dialog: MatDialogRef<NewPlaylistDialog>,
+    @Inject(MAT_DIALOG_DATA) private data: any
+   ) { }
+
+  ngOnInit() {
+  }
+
+  onNoClick(): void {
+    this.dialog.close();
+  }
+
+  newPlaylist(name: string) {
+    this.http.post<number>('/playlist', {'name': name}).subscribe(id => {
+      this.data.parent.playlists.push(new Playlist(id, name, this.http));
+      this.dialog.close();
     });
   }
 

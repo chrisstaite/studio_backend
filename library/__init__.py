@@ -1,2 +1,3 @@
 from .library import Library
-from .tracks import Tracks
+from .tracks import Track, Tracks
+from .playlist import Playlist

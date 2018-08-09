@@ -18,7 +18,8 @@ import {
   MatProgressBarModule,
   MatListModule,
   MatPaginatorModule,
-  MatProgressSpinnerModule
+  MatProgressSpinnerModule,
+  MatTableModule
 } from '@angular/material';
 
 import { AppComponent } from './app.component';
@@ -28,7 +29,7 @@ import { MixerListComponent } from './mixer-list/mixer-list.component';
 import { MixerComponent } from './mixer/mixer.component';
 import { BrowserPlaybackComponent } from './browser-playback/browser-playback.component';
 import { DirectoryPickerComponent } from './directory-picker/directory-picker.component';
-import { LibraryComponent, LibraryRootsDialog } from './library/library.component';
+import { LibraryComponent, LibraryRootsDialog, NewPlaylistDialog, SongTimePipe } from './library/library.component';
 
 @NgModule({
   declarations: [
@@ -42,12 +43,15 @@ import { LibraryComponent, LibraryRootsDialog } from './library/library.componen
     BrowserPlaybackComponent,
     DirectoryPickerComponent,
     LibraryComponent,
-    LibraryRootsDialog
+    LibraryRootsDialog,
+    NewPlaylistDialog,
+    SongTimePipe
   ],
   entryComponents: [
     NewInputDialog,
     NewOutputDialog,
     LibraryRootsDialog,
+    NewPlaylistDialog,
     DirectoryPickerComponent
   ],
   imports: [
@@ -68,7 +72,8 @@ import { LibraryComponent, LibraryRootsDialog } from './library/library.componen
     MatProgressBarModule,
     MatListModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatTableModule
   ],
   providers: [],
   bootstrap: [AppComponent]

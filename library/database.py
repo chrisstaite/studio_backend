@@ -18,6 +18,8 @@ class Track(Base):
     artist = sqlalchemy.Column(sqlalchemy.String)
     # The title of the track
     title = sqlalchemy.Column(sqlalchemy.String)
+    # The length of the track in seconds
+    length = sqlalchemy.Column(sqlalchemy.Float)
 
 
 class TrackPlay(Base):

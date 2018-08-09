@@ -78,7 +78,11 @@ class TrackSearch(flask_restful.Resource):
             'count': tracks.count(),
             'tracks': [
                 {
-                    'id': track.id, 'location': track.location, 'title': track.title, 'artist': track.artist
+                    'id': track.id,
+                    'location': track.location,
+                    'title': track.title,
+                    'artist': track.artist,
+                    'length': track.length
                 } for track in tracks[args['page']]
             ]
         }
@@ -86,12 +90,25 @@ class TrackSearch(flask_restful.Resource):
 
 class Track(flask_restful.Resource):
     """
-    Handler for playing tracks
+    Handler for playing tracks and updating their details
     """
 
-    def get(self, id) -> typing.Dict:
+    def __init__(self):
+        """
+        Create the parser for querying
+        """
+        self._parser = flask_restful.reqparse.RequestParser()
+        self._parser.add_argument(
+            'artist', type=str, help='The artist name'
+        )
+        self._parser.add_argument(
+            'title', type=str, help='The title name'
+        )
+
+    def get(self, id: int) -> typing.Dict:
         """
         Get a list of all the tracks matching the query
+        :param id:  The ID of the track
         :return:  A list of all tracks matching
         """
         def generate(track_):
@@ -100,11 +117,25 @@ class Track(flask_restful.Resource):
                 while data:
                     yield data
                     data = file_.read(1024)
-        track = library.Tracks.get_track(id)
+        track = library.Track(id)
         mimetype, encoding = mimetypes.guess_type(track.location)
         if mimetype is None:
             mimetype = 'audio/mpeg'
         return flask.Response(generate(track), mimetype=mimetype)
+
+    def put(self, id: int) -> bool:
+        """
+        Change the track details
+        :param id:  The ID of the track
+        :return:  Always true
+        """
+        args = self._parser.parse_args(strict=True)
+        track = library.Track(id)
+        if args['title'] is not None:
+            track.title = args['title']
+        if args['artist'] is not None:
+            track.artist = args['artist']
+        return True
 
 
 class Filesystem(flask_restful.Resource):
@@ -171,6 +202,96 @@ class Filesystem(flask_restful.Resource):
         return list(self._list_dirs(location))
 
 
+class Playlists(flask_restful.Resource):
+    """
+    Handler listing playlists
+    """
+
+    def __init__(self):
+        """
+        Create the parser for adding and removing directories
+        """
+        self._parser = flask_restful.reqparse.RequestParser()
+        self._parser.add_argument(
+            'name', type=str, help='The name of the playlist', required=True
+        )
+
+    @staticmethod
+    def get() -> typing.List[typing.Dict]:
+        """
+        Get a list of all the playlists
+        :return:  A list of all the playlists
+        """
+        return list({'id': playlist.id, 'name': playlist.name} for playlist in library.Playlist.list())
+
+    def post(self) -> int:
+        """
+        Create a new playlist
+        :return:  The ID of the new playlist
+        """
+        args = self._parser.parse_args(strict=True)
+        return library.Playlist.create(args['name'])
+
+
+class Playlist(flask_restful.Resource):
+    """
+    Handler adding and removing playlists
+    """
+
+    def __init__(self):
+        """
+        Create the parser for adding and removing directories
+        """
+        self._parser = flask_restful.reqparse.RequestParser()
+        self._parser.add_argument(
+            'name', type=str, help='The name of the playlist'
+        )
+        self._parser.add_argument(
+            'tracks', type=int, action='append', help='The tracks for the playlist'
+        )
+
+    def get(self, id) -> typing.List[typing.Dict]:
+        """
+        Get the tracks for a playlist
+        :param id:  The ID of the playlist
+        :return:  A list of the tracks in the playlist
+        """
+        playlist = library.Playlist(id)
+        return [
+            {
+                'id': track.id,
+                'location': track.location,
+                'title': track.title,
+                'artist': track.artist,
+                'length': track.length
+            } for track in playlist
+        ]
+
+    def put(self, id) -> bool:
+        """
+        Change the name of the playlist
+        :param id:  The ID of the playlist
+        :return:  Always true
+        """
+        args = self._parser.parse_args(strict=True)
+        playlist = library.Playlist(id)
+        if args['name'] is not None:
+            playlist.name = args['name']
+        if args['tracks'] is not None:
+            playlist.tracks = args['tracks']
+        return True
+
+    @staticmethod
+    def delete(id) -> bool:
+        """
+        Delete the
+        :param id:  The ID of the playlist
+        :return:  Always true
+        """
+        library.Playlist(id).delete()
+        return True
+
+
 def setup_api(api):
     """
     Configure the REST endpoints for this namespace
@@ -180,6 +301,8 @@ def setup_api(api):
     api.add_resource(Library, '/library')
     api.add_resource(TrackSearch, '/library/track')
     api.add_resource(Track, '/library/track/<int:id>')
+    api.add_resource(Playlists, '/playlist')
+    api.add_resource(Playlist, '/playlist/<int:id>')
 
 
 mimetypes.init()

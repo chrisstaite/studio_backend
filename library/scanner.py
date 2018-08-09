@@ -91,11 +91,13 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
             session.close()
             return
         try:
-            audioread.audio_open(filename).close()
+            with audioread.audio_open(filename) as track:
+                length = track.duration
             valid = True
         except:
+            length = 0.0
             valid = False
-        if valid:
+        if valid and length > 0.0:
             try:
                 file = eyed3.load(filename)
                 artist = file.tag.artist
@@ -103,7 +105,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
             except:
                 artist = ''
                 title = ''
-            session.add(database.Track(location=filename, artist=artist, title=title))
+            session.add(database.Track(location=filename, artist=artist, title=title, length=length))
             session.commit()
         session.close()
 
