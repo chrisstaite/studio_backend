@@ -3,6 +3,7 @@ import audioread
 import threading
 import numpy
 import time
+import math
 from . import callback
 
 
@@ -16,14 +17,24 @@ class File(callback.Callback):
         Open an audio file ready to play it
         :param path:  The path to the file to play
         :param blocks:  The number of blocks to read at a time per channel
+        :raises audioread.NoBackendError:  Unable to open the path for playback
         """
         super().__init__()
-        self._file = audioread.audio_open(path)
-        self._blocks_sent = 0
+        self._path = path
+        self._open()
         self._blocks = blocks * self._file.channels
         self._playing = False
         self._time = 0.0
         self._end_callback = None
+        self._play_thread = None
+
+    def _open(self) -> None:
+        """
+        Open the file at the start
+        """
+        self._file = audioread.audio_open(self._path)
+        self._file_iter = iter(self._file)
+        self._blocks_sent = 0
 
     @property
     def channels(self) -> int:
@@ -40,7 +51,33 @@ class File(callback.Callback):
         if self._playing:
             return
         self._playing = True
-        threading.Thread(target=self._play_thread, daemon=True).start()
+        self._play_thread = threading.Thread(target=self._block_generator, daemon=True)
+        self._play_thread.start()
+
+    def set_location(self, location: float) -> None:
+        """
+        Skip to a given location in an audio file
+        :param location:  The time to skip to in the audio file
+        """
+        # Pause the track if it is playing
+        is_playing = self._playing
+        if is_playing:
+            self.stop()
+            self._play_thread.join()
+        # Determine how many blocks we need to skip to get to the time
+        blocks_per_second = self._file.samplerate * self._file.channels
+        target_blocks = int(math.floor(blocks_per_second * location))
+        # Re-start if we've gone past
+        if self._blocks_sent > target_blocks:
+            self._open()
+        # Iterate over the file until we get to the right time
+        for block in self._file_iter:
+            self._blocks_sent += len(block)
+            if self._blocks_sent >= target_blocks:
+                break
+        # Re-start playing if we were already
+        if is_playing:
+            self.play()
 
     def time(self) -> float:
         """
@@ -56,11 +93,21 @@ class File(callback.Callback):
         """
         return self._file.duration
 
-    def stop(self) -> None:
+    def pause(self) -> None:
         """
-        Stop the file from playing
+        Pause the file from playing
         """
         self._playing = False
+
+    def stop(self) -> None:
+        """
+        Stop the file from playing and reset it to the start
+        """
+        if self._playing:
+            self._playing = False
+            self._play_thread.join()
+        if self._blocks_sent > 0:
+            self._open()
 
     def set_end_callback(self, end_callback: typing.Callable[[], None]) -> None:
         """
@@ -69,7 +116,7 @@ class File(callback.Callback):
         """
         self._end_callback = end_callback
 
-    def _play_thread(self) -> None:
+    def _block_generator(self) -> None:
         """
         The loop that plays the sound from start to end, queueing raw PCM blocks
         ready to be sent to callbacks when the clock source ticks
@@ -78,15 +125,16 @@ class File(callback.Callback):
         # In order to know when to sleep until we need to know when we started
         start_time = time.time()
         # This is how many blocks we should have passed per second
-        blocks_per_second = self._file.samplerate * self._file.channels
+        channels = self._file.channels
+        blocks_per_second = self._file.samplerate * channels
         # Calculate the starting time
         start_time -= self._blocks_sent / blocks_per_second
-        for block in self._file:
+        for block in self._file_iter:
             # Add the newly read blocks to the existing ones,
             # sorting out the interlacing of the channels
             raw_block = numpy.append(
                 raw_block,
-                numpy.fromstring(block, dtype=numpy.int16).reshape(-1, self._file.channels)
+                numpy.fromstring(block, dtype=numpy.int16).reshape(-1, channels)
             )
             while len(raw_block) >= self._blocks and self._playing:
                 # Add the number of blocks we're about to pass to find out when we should
