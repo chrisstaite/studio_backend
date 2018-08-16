@@ -9,6 +9,7 @@ import os.path
 import functools
 import rest
 import uuid
+import settings
 
 
 class Server(object):
@@ -56,17 +57,15 @@ class Server(object):
         # Install the required packages
         subprocess.call([npm, 'install'], cwd=frontend)
         # Run the build and allow it to watch for changes
-        self._angular = subprocess.Popen(
-            [
-                node, ng, 'build',
-                '--aot',
-                '--base-href', '/frontend/',
-                '--watch',
-                # TODO: Enable production mode
-                # '--prod', '--configuration', 'production'
-            ],
-            cwd=frontend
-        )
+        node_builder = [
+            node, ng, 'build',
+            '--aot',
+            '--base-href', '/frontend/',
+            '--watch'
+        ]
+        if not settings.FRONTEND_DEBUG:
+            node_builder += ['--prod', '--configuration', 'production']
+        self._angular = subprocess.Popen(node_builder, cwd=frontend)
         # Serve the built directory
         dist = os.path.join(frontend, 'dist', 'frontend')
         self._app.add_url_rule(
