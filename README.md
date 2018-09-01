@@ -24,13 +24,23 @@ This project is part of the radio studio project.  It has the goal of producing 
 Getting started
 ---------------
 
-You can set up an environment to run the software by installing Python 3 and running the following:
+You can set up an environment to run the software by installing Python 3.
+
+On Mac OS X you will also need to run the following:
+`/Applications/Python\ 3.6/Install\ Certificates.command`
+
+Then you can setup using
 
 ```
 python3 -m virtualenv venv
 curl https://bootstrap.pypa.io/get-pip.py | venv/bin/python3
 venv/bin/pip3 install -r requirements.txt
 venv/bin/python3 -m nodeenv -p
+```
+
+Finally run with:
+
+```
 venv/bin/python3 server.py
 ```
 

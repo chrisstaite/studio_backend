@@ -10,6 +10,7 @@ import functools
 import rest
 import uuid
 import settings
+import certifi
 
 
 class Server(object):
@@ -52,9 +53,10 @@ class Server(object):
         bin_dir = os.path.dirname(sys.executable)
         npm = os.path.join(bin_dir, 'npm')
         node = os.path.join(bin_dir, 'node')
-        frontend = os.path.join(os.path.dirname(__file__), 'frontend')
+        frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
         ng = os.path.join(frontend, 'node_modules', '.bin', 'ng')
         # Install the required packages
+        subprocess.call([npm, 'config', 'set', 'cafile', certifi.where()])
         subprocess.call([npm, 'install'], cwd=frontend)
         # Run the build and allow it to watch for changes
         node_builder = [

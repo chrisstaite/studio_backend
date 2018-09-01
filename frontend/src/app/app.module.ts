@@ -30,6 +30,7 @@ import { MixerComponent } from './mixer/mixer.component';
 import { BrowserPlaybackComponent } from './browser-playback/browser-playback.component';
 import { DirectoryPickerComponent } from './directory-picker/directory-picker.component';
 import { LibraryComponent, LibraryRootsDialog, NewPlaylistDialog, SongTimePipe } from './library/library.component';
+import { DragulaModule } from 'ng2-dragula';
 
 @NgModule({
   declarations: [
@@ -73,7 +74,8 @@ import { LibraryComponent, LibraryRootsDialog, NewPlaylistDialog, SongTimePipe }
     MatListModule,
     MatPaginatorModule,
     MatProgressSpinnerModule,
-    MatTableModule
+    MatTableModule,
+    DragulaModule.forRoot()
   ],
   providers: [],
   bootstrap: [AppComponent]

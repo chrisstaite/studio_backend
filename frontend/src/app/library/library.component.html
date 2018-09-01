@@ -110,6 +110,7 @@
 
         <tr mat-header-row *matHeaderRowDef="playlistDisplayColumns"></tr>
         <tr mat-row *matRowDef="let song; columns: playlistDisplayColumns;"
+            dragula="song"
             (click)="playlistToggle(song)"
             [ngClass]="{'selected': (playlistSelected.indexOf(song) > -1)}"></tr>
       </table>
