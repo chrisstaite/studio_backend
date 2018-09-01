@@ -2,8 +2,9 @@ import { Component, Inject, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { DirectoryPickerService } from '../directory-picker.service';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { DragulaService } from 'ng2-dragula';
 
 enum SongState {
   Stopped,
@@ -69,6 +70,21 @@ class Playlist {
     this._update();
   }
 
+  moveTrack(index: number, after: number) {
+    if ((after === null && index == this._tracks.length) || (after !== null && index == after - 1)) {
+      // Already in the right place, nothing to do
+      return;
+    }
+    var track = this._tracks.splice(index, 1)[0];
+    if (after === null) {
+      this._tracks.push(track);
+    } else {
+      this._tracks.splice(after, 0, track);
+    }
+    this._tracksSubject.next(this._tracks);
+    this._update();
+  }
+
   remove(tracks: Array<Song>) {
     tracks.forEach(track => {
       let index = this._tracks.indexOf(track);
@@ -120,12 +136,33 @@ export class LibraryComponent implements OnInit {
   playlistSelected: Array<Song> = [];
   currentEdit: Song;
   private _playlist: Playlist;
+  private _subs = new Subscription();
 
-  constructor(private dialog: MatDialog, private http: HttpClient) {
-    this._updateDebounce.pipe(debounceTime(200)).subscribe(() => this._updateList());
+  constructor(private dialog: MatDialog, private http: HttpClient, private dragulaService: DragulaService) {
+    this._subs.add(this._updateDebounce.pipe(debounceTime(200)).subscribe(() => this._updateList()));
   }
 
   ngOnInit() {
+    this.dragulaService.createGroup('playlist-tracks', {
+      revertOnSpill: true,
+      accepts: function (el, target, source, sibling) {
+        return sibling === null || !sibling.classList.contains('mat-header-row');
+      },
+      moves: function (el:any, container:any, handle:any):any {
+        return !el.classList.contains('mat-header-row');
+      }
+    });
+
+    this._subs.add(
+      this.dragulaService.drop('playlist-tracks').subscribe(
+        ({ name, el, target, source, sibling }) => {
+          var index = Number(el.getAttribute('data-index'));
+          var insertBefore = sibling === null ? null : Number(sibling.getAttribute('data-index'));
+          this._playlist.moveTrack(index, insertBefore);
+        }
+      )
+    );
+
     this._updateList();
 
     this.http.get<any>('/playlist').subscribe((data: any) => {
@@ -134,6 +171,10 @@ export class LibraryComponent implements OnInit {
         return new Playlist(playlist.id, playlist.name, http);
       });
     });
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   saveSong() {
@@ -262,6 +303,7 @@ export class LibraryComponent implements OnInit {
 export class LibraryRootsDialog implements OnInit {
 
   roots: Array<string> = [];
+  private _subs = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -279,11 +321,15 @@ export class LibraryRootsDialog implements OnInit {
 
   newRoot() {
     let roots = this.roots;
-    this.picker.pick().subscribe((directory: string) => {
+    this._subs.add(this.picker.pick().subscribe((directory: string) => {
       this.http.post('/library', { 'directory': directory }).subscribe(() => {
         roots.push(directory);
       });
-    });
+    }));
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
 }

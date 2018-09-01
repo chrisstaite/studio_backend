@@ -66,9 +66,9 @@ class PlaylistTrack(Base):
         sqlalchemy.Integer, sqlalchemy.ForeignKey('playlist.id'), nullable=False, primary_key=True
     )
     # The track entry for the playlist
-    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), nullable=False, primary_key=True)
+    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), nullable=False)
     # The index in the playlist of the track to change the order
-    index = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
+    index = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, primary_key=True)
 
 
 engine = sqlalchemy.create_engine('sqlite:///' + os.path.join(os.path.dirname(__file__), 'library.db'))

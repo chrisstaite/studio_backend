@@ -94,26 +94,26 @@
         </button>
       </div>
 
-      <table mat-table *ngIf="playlist" [dataSource]="playlist.tracks">
+      <mat-table *ngIf="playlist" [dataSource]="playlist.tracks" dragula="playlist-tracks">
         <ng-container matColumnDef="artist">
-          <th mat-header-cell *matHeaderCellDef>Artist</th>
-          <td mat-cell *matCellDef="let song">{{ song.artist }}</td>
+          <mat-header-cell *matHeaderCellDef>Artist</mat-header-cell>
+          <mat-cell *matCellDef="let song">{{ song.artist }}</mat-cell>
         </ng-container>
         <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>Title</th>
-          <td mat-cell *matCellDef="let song">{{ song.title }}</td>
+          <mat-header-cell *matHeaderCellDef>Title</mat-header-cell>
+          <mat-cell *matCellDef="let song">{{ song.title }}</mat-cell>
         </ng-container>
         <ng-container matColumnDef="length">
-          <th mat-header-cell *matHeaderCellDef>Length</th>
-          <td mat-cell *matCellDef="let song">{{ song.length | songTime }}</td>
+          <mat-header-cell *matHeaderCellDef>Length</mat-header-cell>
+          <mat-cell *matCellDef="let song">{{ song.length | songTime }}</mat-cell>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="playlistDisplayColumns"></tr>
-        <tr mat-row *matRowDef="let song; columns: playlistDisplayColumns;"
-            dragula="song"
+        <mat-header-row *matHeaderRowDef="playlistDisplayColumns"></mat-header-row>
+        <mat-row *matRowDef="let song; columns: playlistDisplayColumns; let index = index;"
+            [attr.data-index]="index"
             (click)="playlistToggle(song)"
-            [ngClass]="{'selected': (playlistSelected.indexOf(song) > -1)}"></tr>
-      </table>
+            [ngClass]="{'selected': (playlistSelected.indexOf(song) > -1)}"></mat-row>
+      </mat-table>
     </mat-card-content>
   </mat-card>
 </div>
