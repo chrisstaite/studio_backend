@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { AvailableInputsService, AvailableInput } from '../available-inputs.service';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import * as io from 'socket.io-client';
 
 class Output {
