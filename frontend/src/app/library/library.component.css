@@ -10,7 +10,7 @@ table {
 td button {
   margin: 0 10px;
 }
-tr.selected {
+tr.selected, mat-row.selected {
   background-color: rgba(0, 0, 0, 0.1);
 }
 .flex-group {
