@@ -90,12 +90,78 @@ class Output(object):
     A wrapper around an output for the ID and display name
     """
 
-    __slots__ = ('id', 'display_name', 'output')
+    __slots__ = ('_id', '_display_name', '_output')
 
     def __init__(self, id_, display_name, output):
-        self.id = id_
-        self.display_name = display_name
-        self.output = output
+        self._id = id_
+        self._display_name = display_name
+        self._output = output
+
+    @property
+    def id(self):
+        """
+        Get the UUID for this output
+        :return:  The UUID of this output
+        """
+        return self._id
+
+    @property
+    def output(self):
+        """
+        Get the underlying output, should not be used to set the input
+        :return:  The underlying output
+        """
+        return self._output
+
+    @property
+    def display_name(self):
+        """
+        Get the display name for this output
+        :return:  The display name of this output
+        """
+        return self._display_name
+
+    @display_name.setter
+    def display_name(self, display_name):
+        """
+        Set the display name for this output
+        :param display_name:  The display name to set
+        """
+        self._display_name = display_name
+        session = persist.Session()
+        entity = session.query(persist.Output).get(self._id)
+        entity.display_name = display_name
+        session.commit()
+        session.close()
+
+    @property
+    def input(self):
+        """
+        Get the ID of the input
+        :return:  The ID of the input for this output
+        """
+        from . import input
+        return input.get_input_id(self._output.input)
+
+    @input.setter
+    def input(self, input_id):
+        """
+        Set the input to the given ID
+        :param input_id:  The ID of the input to use
+        :raises ValueError:  If the input_id is not valid
+        :raises InUseException:  If the output is multiplexec
+        """
+        if isinstance(self._output.input, MultiplexedOutput):
+            raise exception.InUseException()
+        if input_id is None:
+            input_id = ''
+        from . import input
+        self._output.input = input.get_input(input_id)
+        session = persist.Session()
+        entity = session.query(persist.Output).get(self._id)
+        entity.input = input_id
+        session.commit()
+        session.close()
 
 
 class Outputs(object):
@@ -228,19 +294,16 @@ class Outputs(object):
         Restore the outputs from the database
         """
         session = persist.Session()
-        from . import input
         for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.device).all():
             output_object = audio.output_device.OutputDevice(sql_input.parameters, settings.BLOCK_SIZE)
             output = Output(sql_input.id, sql_input.display_name, output_object)
             cls._outputs.append(output)
-            output_object.input = input.get_input(sql_input.input)
         for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.icecast).all():
             output_object = audio.icecast.Icecast()
             parameters = json.loads(sql_input.parameters)
             output_object.connect(parameters['endpoint'], parameters['password'])
             output = Output(sql_input.id, sql_input.display_name, output_object)
             cls._outputs.append(output)
-            output_object.input = input.get_input(sql_input.input)
         for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.multiplex).all():
             parameters = json.loads(sql_input.parameters)
             parent = cls.get_output(parameters['parent']).output
@@ -254,8 +317,16 @@ class Outputs(object):
             output_object = MultiplexedOutput(parent, multiplex, parameters['channels'], parameters['offset'])
             output = Output(sql_input.id, sql_input.display_name, output_object)
             cls._outputs.append(output)
-            output_object.input = input.get_input(sql_input.input)
         session.close()
 
-
-Outputs.restore()
+    @classmethod
+    def restore_inputs(cls):
+        """
+        Restore the inputs to the outputs from the database.
+        For some reason, this has to be done in two stages because if this is imported after Mixer then we
+        get an assertion in the PyAudio core.
+        """
+        session = persist.Session()
+        for output in cls._outputs:
+            output.input = session.query(persist.Output).get(output.id).input
+        session.close()

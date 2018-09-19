@@ -76,7 +76,7 @@ class CreatedOutputs(flask_restful.Resource):
             ret = {
                 'id': output.id,
                 'display_name': output.display_name,
-                'input_id': audio_manager.input.get_input_id(output.output.input)
+                'input_id': output.input
             }
             if isinstance(output.output, audio.output_device.OutputDevice):
                 ret['type'] = 'device'
@@ -209,12 +209,12 @@ class Output(flask_restful.Resource):
             socketio.emit('output_update', {'id': output.id, 'display_name': output.display_name})
         if args['input'] is not None:
             try:
-                if isinstance(output.output.input, audio_manager.output.MultiplexedOutput):
-                    flask_restful.abort(400, message='Input is multiplexed, can\'t be re-assigned')
-                output.output.input = audio_manager.input.get_input(args['input'])
+                output.input = args['input']
                 socketio.emit('output_update', {'id': output.id, 'input': args['input']})
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
+            except audio_manager.exception.InUseException:
+                flask_restful.abort(400, message='Input is multiplexed, can\'t be re-assigned')
         return True
 
     @staticmethod
@@ -227,7 +227,7 @@ class Output(flask_restful.Resource):
         try:
             output = audio_manager.output.Outputs.get_output(output_id)
             # If the user is deleting it, then let them even if it's in use
-            output.output.input = None
+            output.input = None
             audio_manager.output.Outputs.delete_output(output)
             socketio = flask.current_app.extensions['socketio']
             socketio.emit('output_remove', {'id': output.id})

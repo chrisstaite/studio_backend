@@ -38,7 +38,7 @@ class Output(Base):
     # The name of the Output
     display_name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     # The UUID of the source of this channel
-    input = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    input = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     # The type of the output
     type = sqlalchemy.Column(sqlalchemy.Enum(OutputTypes), nullable=False)
     # The parameters to construct that type

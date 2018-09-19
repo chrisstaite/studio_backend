@@ -193,12 +193,33 @@ class ChannelMixer(object):
 
 class Mixer(object):
 
-    __slots__ = ('id', 'display_name', 'mixer')
+    __slots__ = ('_id', '_display_name', '_mixer')
 
     def __init__(self, id_, display_name, mixer):
-        self.id = id_
-        self.display_name = display_name
-        self.mixer = mixer
+        self._id = id_
+        self._display_name = display_name
+        self._mixer = mixer
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def mixer(self):
+        return self._mixer
+
+    @property
+    def display_name(self):
+        return self._display_name
+
+    @display_name.setter
+    def display_name(self, display_name):
+        self._display_name = display_name
+        session = persist.Session()
+        entity = session.query(persist.Mixer).get(self._id)
+        entity.display_name = display_name
+        session.commit()
+        session.close()
 
 
 class Mixers(object):
@@ -276,6 +297,3 @@ class Mixers(object):
         for mixer in cls._mixers:
             mixer.mixer.restore(session.query(persist.MixerChannel).filter_by(mixer=mixer.id))
         session.close()
-
-
-Mixers.restore()

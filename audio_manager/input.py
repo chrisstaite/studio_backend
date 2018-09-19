@@ -8,12 +8,33 @@ from . import persist
 
 class Input(object):
 
-    __slots__ = ('id', 'display_name', 'input')
+    __slots__ = ('_id', '_display_name', '_input')
 
     def __init__(self, id_, display_name, input_):
-        self.id = id_
-        self.display_name = display_name
-        self.input = input_
+        self._id = id_
+        self._display_name = display_name
+        self._input = input_
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def display_name(self):
+        return self._display_name
+
+    @display_name.setter
+    def display_name(self, display_name):
+        self._display_name = display_name
+        session = persist.Session()
+        entity = session.query(persist.Input).get(self.id)
+        entity.display_name = display_name
+        session.commit()
+        session.close()
+
+    @property
+    def input(self):
+        return self._input
 
 
 class Inputs(object):
@@ -151,6 +172,3 @@ def get_input_id(input_) -> str:
     # Look for another mixer next
     return mixer.Mixers.get_mixer(input_).id
     # TODO: Add a playlist source lookup
-
-
-Inputs.restore()
