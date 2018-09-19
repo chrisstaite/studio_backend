@@ -274,7 +274,7 @@ class Mixers(object):
             mixer = Mixer(sql_mixer.id, sql_mixer.display_name, mixer)
             cls._mixers.append(mixer)
         for mixer in cls._mixers:
-            mixer.restore(session.query(persist.MixerChannel).filter_by(mixer=mixer.id))
+            mixer.mixer.restore(session.query(persist.MixerChannel).filter_by(mixer=mixer.id))
         session.close()
 
 
