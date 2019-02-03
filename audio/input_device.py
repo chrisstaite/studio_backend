@@ -46,7 +46,7 @@ class InputDevice(callback.Callback):
         Remove a callback from this input device
         :param cb:  The callback to remove
         """
-        super().add_callback(cb)
+        super().remove_callback(cb)
         self._check_state()
 
     def _check_state(self) -> None:

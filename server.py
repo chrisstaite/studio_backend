@@ -65,7 +65,7 @@ class Server(object):
             '--base-href', '/frontend/',
             '--watch'
         ]
-        if not settings.FRONTEND_DEBUG:
+        if not getattr(settings, 'FRONTEND_DEBUG', False):
             node_builder += ['--prod', '--configuration', 'production']
         self._angular = subprocess.Popen(node_builder, cwd=frontend)
         # Serve the built directory
@@ -99,5 +99,4 @@ class Server(object):
 
 
 if __name__ == "__main__":
-    server = Server()
-    server.run()
+    Server().run()
