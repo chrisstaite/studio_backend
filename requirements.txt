@@ -1,6 +1,6 @@
 audioread==2.1.5
 cffi==1.10.0
-numpy==1.13.1
+numpy==1.16.3
 pycparser==2.18
 sounddevice==0.3.8
 flask==1.0.2
