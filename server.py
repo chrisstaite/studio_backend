@@ -56,8 +56,9 @@ class Server(object):
         frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
         ng = os.path.join(frontend, 'node_modules', '.bin', 'ng')
         # Install the required packages
-        subprocess.call([npm, 'config', 'set', 'cafile', certifi.where()])
-        subprocess.call([npm, 'install'], cwd=frontend)
+        path = bin_dir + ':' + os.environ['PATH']
+        subprocess.call([npm, 'config', 'set', 'cafile', certifi.where()], env={'PATH': path})
+        subprocess.call([npm, 'install'], cwd=frontend, env={'PATH': path})
         # Run the build and allow it to watch for changes
         node_builder = [
             node, ng, 'build',
@@ -67,7 +68,7 @@ class Server(object):
         ]
         if not getattr(settings, 'FRONTEND_DEBUG', False):
             node_builder += ['--prod', '--configuration', 'production']
-        self._angular = subprocess.Popen(node_builder, cwd=frontend)
+        self._angular = subprocess.Popen(node_builder, cwd=frontend, env={'PATH': path})
         # Serve the built directory
         dist = os.path.join(frontend, 'dist', 'frontend')
         self._app.add_url_rule(
