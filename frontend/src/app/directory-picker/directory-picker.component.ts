@@ -36,7 +36,7 @@ export class DirectoryPickerComponent implements OnInit {
 
   ngOnInit() {
     let loadChildren = this.loadChildren.bind(this);
-    this.nestedTreeControl.expansionModel.onChange.subscribe(change => {
+    this.nestedTreeControl.expansionModel.changed.subscribe(change => {
       change.added.forEach((node: Directory) => {
         if (node.loading == true) {
           loadChildren(node);
