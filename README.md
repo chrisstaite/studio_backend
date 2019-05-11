@@ -24,9 +24,9 @@ This project is part of the radio studio project.  It has the goal of producing 
 Getting started
 ---------------
 
-You can set up an environment to run the software by installing Python 3.
+You can set up an environment to run the software by installing Python 3.  For NPM to work, you will also need Python 2 installed unfortunately - this is for dependencies to build only, not for runtime.
 
-On Mac OS X you will also need to run the following:
+On Mac OS X if running Python 3.6 (seems to be fixed in 3.7) you will also need to run the following:
 `/Applications/Python\ 3.6/Install\ Certificates.command`
 
 Then you can setup using
