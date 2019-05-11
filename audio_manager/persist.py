@@ -28,6 +28,7 @@ class OutputTypes(enum.Enum):
     device = 0
     icecast = 1
     multiplex = 2
+    file = 3
 
 
 class Output(Base):

@@ -208,6 +208,9 @@ class Outputs(object):
                 'channels': output.output.channels,
                 'offset': output.output.offset
             })
+        elif isinstance(output.output, audio.output_file.RollingFile):
+            type_ = persist.OutputTypes.file
+            parameters = output.output.base_path
         if type_ is not None:
             session = persist.Session()
             session.add(persist.Output(
@@ -249,6 +252,21 @@ class Outputs(object):
             return next(x for x in cls._outputs
                         if isinstance(x.output, audio.output_device.OutputDevice) and
                         x.output.name == name)
+        except StopIteration:
+            raise ValueError('No such device found')
+
+    @classmethod
+    def get_output_file(cls, path: str) -> Output:
+        """
+        Get the Output class for the given output file
+        :param path:  The base path for the output file
+        :return:  The found Output instance
+        :raises ValueError:  The device is not found
+        """
+        try:
+            return next(x for x in cls._outputs
+                        if isinstance(x.output, audio.output_file.RollingFile) and
+                        x.output.base_path == path)
         except StopIteration:
             raise ValueError('No such device found')
 
@@ -315,6 +333,10 @@ class Outputs(object):
                 multiplex = audio.multiplex.Multiplex(parent.channels, settings.BLOCK_SIZE)
                 parent.input = multiplex
             output_object = MultiplexedOutput(parent, multiplex, parameters['channels'], parameters['offset'])
+            output = Output(sql_input.id, sql_input.display_name, output_object)
+            cls._outputs.append(output)
+        for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.file).all():
+            output_object = audio.output_file.RollingFile(sql_input.parameters)
             output = Output(sql_input.id, sql_input.display_name, output_object)
             cls._outputs.append(output)
         session.close()

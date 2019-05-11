@@ -75,4 +75,25 @@
       <mat-icon>add</mat-icon>
     </button>
   </mat-expansion-panel>
+
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Rolling file
+      </mat-panel-title>
+      <mat-panel-description>
+        Create an output that records to a file which rolls every hour
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <mat-form-field>
+      <input #rolling_filename matInput placeholder="The file to record to">
+    </mat-form-field>
+
+    <button mat-mini-fab
+            matTooltip="Create the rolling file" matTooltipPosition="after"
+            (click)="newRollingFile(rolling_filename.value)">
+      <mat-icon>add</mat-icon>
+    </button>
+  </mat-expansion-panel>
 </mat-accordion>

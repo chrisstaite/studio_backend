@@ -164,4 +164,9 @@ export class NewOutputDialog implements OnInit {
     this.http.post<Array<Output>>('/audio/output', new_device).subscribe(this.newDeviceHandler.bind(this));
   }
 
+  newRollingFile(path: string): void {
+    let new_device = { 'type': 'file', 'display_name': 'Live Recording', 'path': path };
+    this.http.post<Array<Output>>('/audio/output', new_device).subscribe(this.newDeviceHandler.bind(this));
+  }
+
 }

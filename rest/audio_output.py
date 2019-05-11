@@ -2,6 +2,8 @@ import typing
 import flask
 import flask_restful
 import flask_restful.reqparse
+import os
+import os.path
 import audio
 import settings
 import audio_manager
@@ -33,7 +35,7 @@ class CreatedOutputs(flask_restful.Resource):
         """
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
-            'type', type=str, choices=('device', 'icecast', 'multiplex'),
+            'type', type=str, choices=('device', 'icecast', 'multiplex', 'file'),
             help='The type of the output to create', required=True
         )
         self._parser.add_argument(
@@ -56,6 +58,10 @@ class CreatedOutputs(flask_restful.Resource):
         )
         self._multiplex_parser.add_argument(
             'channels', type=int, help='The number of channels to split the output into', required=True
+        )
+        self._file_parser = flask_restful.reqparse.RequestParser()
+        self._file_parser.add_argument(
+            'path', type=str, help='The file to record to', required=True
         )
 
     def get(self) -> typing.List[typing.Dict]:
@@ -89,6 +95,9 @@ class CreatedOutputs(flask_restful.Resource):
                 ret['parent_id'] = audio_manager.output.Outputs.get_output(output.output.parent).id
             elif isinstance(output.output, stream_sink.Mp3Generator):
                 ret['type'] = 'browser'
+            elif isinstance(output.output, audio.output_file.RollingFile):
+                ret['type'] = 'file'
+                ret['path'] = output.output.base_path
             return ret
         return [to_dict(output) for output in outputs]
 
@@ -123,6 +132,22 @@ class CreatedOutputs(flask_restful.Resource):
         if not icecast.connect(endpoint, password):
             flask_restful.abort(400, message='Unable to connect to Icecast endpoint')
         return icecast
+
+    @staticmethod
+    def _create_file(path: str) -> audio.output_file.RollingFile:
+        """
+        Create a new rolling output file
+        :param path:  The base path name to use, appending the start time to it
+        :return:  The newly created output
+        """
+        try:
+            audio_manager.output.Outputs.get_output_file(path)
+            flask_restful.abort(400, message='An output to that path already exists.')
+        except ValueError:
+            pass
+        if not os.access(os.path.dirname(os.path.abspath(path)), os.W_OK | os.X_OK):
+            flask_restful.abort(400, message='Unable to write to output directory.')
+        return audio.output_file.RollingFile(path)
 
     @staticmethod
     def _create_multiplex(parent_id: str, channels: int) -> typing.List[audio_manager.output.MultiplexedOutput]:

@@ -47,18 +47,7 @@ venv/bin/python3 server.py
 Current State
 -------------
 
-The current implementation has the following functionality implemented in the backend:
+Features that are missing are as follows:
 
- - Reading from audio files
- - A playlist of audio files
- - Reading live input
- - Mixing multiple inputs with volume control
- - Playing to live output
- - Multiplexing inputs to a multi-channel output
- - Streaming to an Icecast server as an output
- - MP3 stream over the REST API as an output
- - Hosting an Angular server
- - Adding outputs in the UI
- - Adding inputs in the UI
- - Creating mixers in the UI
- - Assigning inputs to outputs and mixer channels
+ - Downloading playlist items from external sources (e.g. YouTube/Bandcamp)
+ - A nice UI that isn't all on one page and the same for all users
