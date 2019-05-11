@@ -51,5 +51,5 @@ Features that are missing are as follows:
 
  - Downloading playlist items from external sources (e.g. YouTube/Bandcamp)
  - A nice UI that isn't all on one page and the same for all users
- - A live playlist with timings and pause points for live
+ - A live playlist with timings and pause points for live (see audio.playlist)
  - A soundboard or jingles etc
