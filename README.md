@@ -44,6 +44,8 @@ Finally run with:
 venv/bin/python3 server.py
 ```
 
+Then open the UI at http://localhost:5000
+
 Current State
 -------------
 
