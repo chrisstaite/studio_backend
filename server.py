@@ -5,6 +5,7 @@ import flask_restful
 import flask_socketio
 import subprocess
 import sys
+import os
 import os.path
 import functools
 import rest
@@ -56,7 +57,7 @@ class Server(object):
         frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
         ng = os.path.join(frontend, 'node_modules', '.bin', 'ng')
         # Install the required packages
-        path = bin_dir + ':' + os.environ['PATH']
+        path = bin_dir + os.pathsep + os.environ['PATH']
         subprocess.call([npm, 'config', 'set', 'cafile', certifi.where()], env={'PATH': path})
         subprocess.call([npm, 'install'], cwd=frontend, env={'PATH': path})
         # Run the build and allow it to watch for changes
