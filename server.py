@@ -55,7 +55,7 @@ class Server(object):
         npm = os.path.join(bin_dir, 'npm')
         node = os.path.join(bin_dir, 'node')
         frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
-        ng = os.path.join(frontend, 'node_modules', '.bin', 'ng')
+        ng = os.path.join(frontend, 'node_modules', '@angular', 'cli', 'bin', 'ng')
         # Install the required packages
         new_env = os.environ.copy()
         new_env['PATH'] = bin_dir + os.pathsep + os.environ['PATH']
