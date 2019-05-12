@@ -146,11 +146,11 @@ class Filesystem(flask_restful.Resource):
         Get the root drives on Windows
         :return:  The root drives on Windows
         """
-        import ctypes.windll
+        from ctypes import windll
         import string
         drives = []
-        bitmask = ctypes.windll.kernel32.GetLogicalDrives()
-        for letter in string.lowercase:
+        bitmask = windll.kernel32.GetLogicalDrives()
+        for letter in string.ascii_lowercase:
             if bitmask & 1:
                 drives.append(letter)
             bitmask >>= 1
