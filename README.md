@@ -31,7 +31,7 @@ On Mac OS X if running Python 3.6 (seems to be fixed in 3.7) you will also need 
 
 Then you can setup using
 
-Linux/OS X
+**Linux/OS X
 
 ```sh
 python3 -m virtualenv venv
@@ -48,7 +48,7 @@ venv/bin/python3 server.py
 
 Then open the UI at <http://localhost:5000>
 
-Windows
+**Windows
 
 ```cmd
 python3 -m virtualenv venv
