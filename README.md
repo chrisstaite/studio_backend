@@ -7,7 +7,7 @@ Overview
 
 This project is part of the radio studio project.  It has the goal of producing an open source and useable radio studio.  The feature set should include by the end:
 
- - Multiple live input sources     
+ - Multiple live input sources
    - From the device
    - From live streams
  - Multiple recorded input sources
@@ -46,6 +46,8 @@ Finally run with:
 venv/bin/python3 server.py
 ```
 
+Then open the UI at <http://localhost:5000>
+
 Windows
 
 ```cmd
@@ -61,6 +63,8 @@ Finally run with:
 ```cmd
 venv\Scripts\python3.exe server.py
 ```
+
+Then open the UI at <http://localhost:5000>
 
 Current State
 -------------

@@ -31,6 +31,7 @@ import { BrowserPlaybackComponent } from './browser-playback/browser-playback.co
 import { DirectoryPickerComponent } from './directory-picker/directory-picker.component';
 import { LibraryComponent, LibraryRootsDialog, NewPlaylistDialog, SongTimePipe } from './library/library.component';
 import { DragulaModule } from 'ng2-dragula';
+import { LivePlaylistComponent } from './live-playlist/live-playlist.component';
 
 @NgModule({
   declarations: [
@@ -46,7 +47,8 @@ import { DragulaModule } from 'ng2-dragula';
     LibraryComponent,
     LibraryRootsDialog,
     NewPlaylistDialog,
-    SongTimePipe
+    SongTimePipe,
+    LivePlaylistComponent
   ],
   entryComponents: [
     NewInputDialog,
