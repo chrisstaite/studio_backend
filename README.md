@@ -31,7 +31,9 @@ On Mac OS X if running Python 3.6 (seems to be fixed in 3.7) you will also need 
 
 Then you can setup using
 
-```
+Linux/OS X
+
+```sh
 python3 -m virtualenv venv
 curl https://bootstrap.pypa.io/get-pip.py | venv/bin/python3
 venv/bin/pip3 install -r requirements.txt
@@ -40,8 +42,24 @@ venv/bin/python3 -m nodeenv -p
 
 Finally run with:
 
-```
+```sh
 venv/bin/python3 server.py
+```
+
+Windows
+
+```cmd
+python3 -m virtualenv venv
+curl https://bootstrap.pypa.io/get-pip.py > get-pip.py
+venv/bin/python3.exe get-pip.py
+venv/Scripts/pip3.exe install -r requirements.txt
+venv/Scripts/python3.exe -m nodeenv -p
+```
+
+Finally run with:
+
+```cmd
+venv\Scripts\python3.exe server.py
 ```
 
 Current State

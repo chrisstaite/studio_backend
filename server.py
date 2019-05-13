@@ -52,8 +52,14 @@ class Server(object):
         Download any Angular modules required, build and add routes
         """
         bin_dir = os.path.dirname(sys.executable)
-        npm = os.path.join(bin_dir, 'npm')
-        node = os.path.join(bin_dir, 'node')
+        if 'windows' in platform.platform().lower():
+            npm_bin = 'npm.cmd'
+            node_bin = 'node.exe'
+        else:
+            npm_bin = 'npm'
+            node_bin = 'node'
+        npm = os.path.join(bin_dir, npm_bin)
+        node = os.path.join(bin_dir, node_bin)
         frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
         ng = os.path.join(frontend, 'node_modules', '@angular', 'cli', 'bin', 'ng')
         # Install the required packages
