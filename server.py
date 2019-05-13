@@ -8,6 +8,7 @@ import sys
 import os
 import os.path
 import functools
+import platform
 import rest
 import uuid
 import settings
