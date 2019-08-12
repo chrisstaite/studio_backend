@@ -62,11 +62,10 @@ class Playlist(object):
     def __iter__(self) -> typing.Iterable[database.Track]:
         """
         Iterate over the tracks on a given page
-        :param index:  The page to get
         :return:  An iterator of the results on that page
         """
         query = self._session.query(database.Track, database.PlaylistTrack). \
-            filter(database.PlaylistTrack.playlist == self._playlist.id). \
+            filter(database.PlaylistTrack.playlist == self.id). \
             filter(database.Track.id == database.PlaylistTrack.track). \
             order_by(database.PlaylistTrack.index)
         for track, playlist_track in query.all():
