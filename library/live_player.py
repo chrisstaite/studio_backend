@@ -5,7 +5,7 @@ from . import playlist
 
 class LivePlayer(object):
     """
-    A special kind of playlist that supports pauses and bed
+    A special kind of playlist that supports pauses, jingles and bed
     """
 
     @staticmethod
@@ -70,7 +70,7 @@ class LivePlayer(object):
         self._session.commit()
 
     @property
-    def jingle_playlist(self):
+    def jingle_playlist(self) -> typing.Optional[playlist.Playlist]:
         playlist_id = self._playlist.jingle_playlist
         return None if not playlist_id else playlist.Playlist(playlist_id)
 
@@ -103,14 +103,14 @@ class LivePlayer(object):
         self._session.commit()
 
     @property
-    def tracks(self) -> typing.List[typing.Tuple[int, int]]:
+    def tracks(self) -> typing.List[typing.Tuple[int, database.LivePlayerType]]:
         query = self._session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
         return [(track.track, track.type) for track in query.all()]
 
     @tracks.setter
-    def tracks(self, tracks: typing.List[typing.Tuple[int, int]]):
+    def tracks(self, tracks: typing.List[typing.Tuple[int, database.LivePlayerType]]):
         query = self._session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id)
         query.delete()

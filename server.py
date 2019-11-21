@@ -47,6 +47,7 @@ class Server(object):
         rest.stream_sink.setup_api(api)
         rest.audio_mix.setup_api(api)
         rest.library.setup_api(api)
+        rest.live_player.setup_api(api)
 
     def _setup_angular(self) -> None:
         """

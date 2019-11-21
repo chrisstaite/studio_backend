@@ -240,7 +240,7 @@ class Playlist(flask_restful.Resource):
 
     def __init__(self):
         """
-        Create the parser for adding and removing directories
+        Create the parser for adding and removing playlists
         """
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
