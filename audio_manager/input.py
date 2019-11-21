@@ -149,8 +149,12 @@ def get_input(input_id: str):
         pass
     from . import mixer
     # Look for another mixer next
-    return mixer.Mixers.get_mixer(input_id).mixer
-    # TODO: Add a playlist source lookup
+    try:
+        return mixer.Mixers.get_mixer(input_id).mixer
+    except ValueError:
+        pass
+    from . import live_player
+    return live_player.LivePlayers.get_player(input_id).playlist
 
 
 def get_input_id(input_) -> str:
@@ -170,5 +174,9 @@ def get_input_id(input_) -> str:
         pass
     from . import mixer
     # Look for another mixer next
-    return mixer.Mixers.get_mixer(input_).id
-    # TODO: Add a playlist source lookup
+    try:
+        return mixer.Mixers.get_mixer(input_).id
+    except ValueError:
+        pass
+    from . import live_player
+    return live_player.LivePlayers.get_player(input_).id

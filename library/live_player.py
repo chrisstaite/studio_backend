@@ -23,6 +23,8 @@ class LivePlayer(object):
         playlist = database.LivePlayer(name=name, index=0, state=database.LivePlayerState.paused, jingle_plays=0)
         session.add(playlist)
         session.commit()
+        import audio_manager
+        audio_manager.live_player.LivePlayers.add(LivePlayer(playlist.id))
         return playlist.id
 
     def __init__(self, id: int):
@@ -47,6 +49,8 @@ class LivePlayer(object):
         return self._playlist.id
 
     def delete(self):
+        import audio_manager
+        audio_manager.live_player.LivePlayers.remove(self)
         self._session.delete(self._playlist)
         self._session.commit()
         self._session.close()

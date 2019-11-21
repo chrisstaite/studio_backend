@@ -1,11 +1,12 @@
 import numpy
+import typing
 from . import callback
 from . import file
 
 
 class Playlist(callback.Callback):
     """
-    A class that encapsulates a number of file names, the topmost of which is wrapped by a audio.file.File.
+    A class that requests the next file when the last has finished, when provided, wraps in a audio.file.File.
     """
 
     def __init__(self, blocks: int):
@@ -14,36 +15,36 @@ class Playlist(callback.Callback):
         :param blocks:  The block size to use
         """
         super().__init__()
-        self._files = []
+        self._callback = None
         self._file = None
         self._blocks = blocks
 
-    def add_file(self, filename: str) -> None:
+    def set_next_callback(self, callback: typing.Callable) -> None:
         """
-        Add a file to the end of the playlist
-        :param filename:  The file to add to the end of the playlist
+        Set the callback that is called when the current file has finished playing
+        :param callback:  The callback to call
         """
-        self._files.append(filename)
-        if len(self._files) == 0:
-            self._load_file()
+        self._callback = callback
 
-    def _load_file(self) -> None:
+    def set_file(self, filename: str) -> None:
         """
-        Load the next file in the playlist
+        Set the current playback file, replacing the current one and start it playing
+        :param filename:  The file to set as playing
         """
-        self._file = file.File(self._files[0], self._blocks)
+        if self._file is not None:
+            self.stop()
+        self._file = file.File(filename, self._blocks)
         self._file.add_callback(self._forward)
+        self._file.set_end_callback(self._next_file)
+        self._file.play()
 
     def _next_file(self) -> None:
         """
         Used as callback when file is finished to play the next one
         """
-        self._files.pop()
-        if len(self._files) > 0:
-            self._load_file()
-            self.play()
-        else:
-            self._file = None
+        self._file = None
+        if self._callback is not None:
+            self._callback()
 
     def _forward(self, _, blocks: numpy.array) -> None:
         """
