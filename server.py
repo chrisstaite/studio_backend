@@ -28,6 +28,7 @@ class Server(object):
         self._app.config['SECRET_KEY'] = str(uuid.uuid4())
         self._socketio = flask_socketio.SocketIO(self._app, async_mode='eventlet')
         self._angular = None
+        self._react = None
         self._setup_rest()
         self._setup_socketio()
         self._setup_angular()
