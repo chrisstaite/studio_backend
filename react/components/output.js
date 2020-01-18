@@ -8,13 +8,13 @@ import CardActions from '@material-ui/core/CardActions';
 import RemoveIcon from '@material-ui/icons/Remove';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
-import useDebouncedEffect from 'use-debounced-effect';
 import Select from '@material-ui/core/Select';
 import InputLabel from '@material-ui/core/InputLabel';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import MenuItem from '@material-ui/core/MenuItem';
 import { useInputs } from './input-store.js';
+import useServerValue from './server-value.js'
 
 const useStyles = makeStyles({
   card: {
@@ -33,60 +33,21 @@ function title(output) {
     return titles[output.type];
 }
 
-const removeOutput = (id) =>
-    fetch('/audio/output/' + id, {method: 'DELETE'});
-
-const updateName = (id, name) => {
-    const data = new FormData();
-    data.append('display_name', name);
-    fetch('/audio/output/' + id, {method: 'PUT', body: data});
-}
-
-const updateInput = (id, input_id) => {
-    const data = new FormData();
-    data.append('input', input_id);
-    fetch('/audio/output/' + id, {method: 'PUT', body: data});
-}
-
 const Output = ({output}) => {
+    const updateOutput = (name, value) => {
+        const data = new FormData();
+        data.append(name, value);
+        fetch('/audio/output/' + output.id, {method: 'PUT', body: data});
+    };
+    const updateName = name => updateOutput('display_name', name);
+    const updateInput = input => updateOutput('input', input);
+
     const classes = useStyles();
-    const [serverDisplayName, setServerDisplayName] = useState(output.display_name);
-    const [displayName, setDisplayName] = useState(output.display_name);
-    const [serverInput, setServerInput] = useState(output.input_id);
-    const [input, setInput] = useState(output.input_id);
+    const [displayName, setDisplayName] = useServerValue(output.display_name, updateName);
+    const [input, setInput] = useServerValue(output.input_id, updateInput);
     const inputs = useInputs();
 
-    useDebouncedEffect(
-        () => {
-            if (serverDisplayName != displayName) {
-                updateName(output.id, displayName);
-            }
-        },
-        600,
-        [output.id, displayName]
-    );
-
-    useDebouncedEffect(
-        () => {
-            if (serverInput != input) {
-                updateInput(output.id, input);
-            }
-        },
-        600,
-        [output.id, input]
-    );
-
-    const handleInputChange = event => setInput(event.target.value);
-
-    useEffect(() => {
-        setServerDisplayName(output.display_name);
-        setDisplayName(output.display_name);
-    }, [output.display_name]);
-
-    useEffect(() => {
-        setServerInput(output.input_id);
-        setInput(output.input_id);
-    }, [output.input_id]);
+    const removeOutput = () => fetch('/audio/output/' + output.id, {method: 'DELETE'});
 
     return (
         <Card className={classes.card}>
@@ -102,7 +63,7 @@ const Output = ({output}) => {
             <CardContent>
                 <FormControl>
                     <InputLabel>Input device</InputLabel>
-                    <Select value={input} onChange={handleInputChange}>
+                    <Select value={input} onChange={event => setInput(event.target.value)}>
                         {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
                     </Select>
                     <FormHelperText>The device to input from</FormHelperText>
@@ -110,7 +71,7 @@ const Output = ({output}) => {
             </CardContent>
             <CardActions>
                 <Tooltip title="Remove this device">
-                    <Fab color="primary" size="small" onClick={() => removeOutput(output.id)}>
+                    <Fab color="primary" size="small" onClick={removeOutput}>
                         <RemoveIcon />
                     </Fab>
                 </Tooltip>

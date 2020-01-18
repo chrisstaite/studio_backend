@@ -8,13 +8,13 @@ import CardActions from '@material-ui/core/CardActions';
 import RemoveIcon from '@material-ui/icons/Remove';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
-import useDebouncedEffect from 'use-debounced-effect';
+import useServerValue from './server-value.js'
 
 const useStyles = makeStyles({
-  card: {
-    display: 'inline-block',
-    margin: '10px',
-  },
+    card: {
+        display: 'inline-block',
+        margin: '10px',
+    },
 });
 
 function title(input) {
@@ -23,34 +23,17 @@ function title(input) {
     }
 }
 
-const removeInput = (id) =>
-    fetch('/audio/input/' + id, {method: 'DELETE'});
-
-const updateName = (id, name) => {
-    const data = new FormData();
-    data.append('display_name', name);
-    fetch('/audio/input/' + id, {method: 'PUT', body: data});
-}
-
 const Input = ({input}) => {
+    const updateName = name => {
+        const data = new FormData();
+        data.append('display_name', name);
+        fetch('/audio/input/' + input.id, {method: 'PUT', body: data});
+    };
+
     const classes = useStyles();
-    const [serverDisplayName, setServerDisplayName] = useState(input.display_name);
-    const [displayName, setDisplayName] = useState(input.display_name);
+    const [displayName, setDisplayName] = useServerValue(output.display_name, updateName);
 
-    useDebouncedEffect(
-        () => {
-            if (serverDisplayName != displayName) {
-                updateName(input.id, displayName);
-            }
-        },
-        600,
-        [input.id, displayName]
-    );
-
-    useEffect(() => {
-        setServerDisplayName(input.display_name);
-        setDisplayName(input.display_name);
-    }, [input.display_name]);
+    const removeInput = () => fetch('/audio/input/' + input.id, {method: 'DELETE'});
 
     return (
         <Card className={classes.card}>
@@ -65,7 +48,7 @@ const Input = ({input}) => {
             </CardContent>
             <CardActions>
                 <Tooltip title="Remove this device">
-                    <Fab color="primary" size="small" onClick={() => removeInput(input.id)}>
+                    <Fab color="primary" size="small" onClick={removeInput}>
                         <RemoveIcon />
                     </Fab>
                 </Tooltip>
