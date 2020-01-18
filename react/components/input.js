@@ -61,7 +61,7 @@ const Input = ({input}) => {
                 <TextField label="Name" value={displayName} onChange={e => setDisplayName(e.target.value)} />
             </CardContent>
             <CardContent>
-                {input.name}
+                <Typography>{input.name}</Typography>
             </CardContent>
             <CardActions>
                 <Tooltip title="Remove this device">

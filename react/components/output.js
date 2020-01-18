@@ -42,10 +42,17 @@ const updateName = (id, name) => {
     fetch('/audio/output/' + id, {method: 'PUT', body: data});
 }
 
+const updateInput = (id, input_id) => {
+    const data = new FormData();
+    data.append('input', input_id);
+    fetch('/audio/output/' + id, {method: 'PUT', body: data});
+}
+
 const Output = ({output}) => {
     const classes = useStyles();
     const [serverDisplayName, setServerDisplayName] = useState(output.display_name);
     const [displayName, setDisplayName] = useState(output.display_name);
+    const [serverInput, setServerInput] = useState(output.input_id);
     const [input, setInput] = useState(output.input_id);
     const inputs = useInputs();
 
@@ -59,12 +66,27 @@ const Output = ({output}) => {
         [output.id, displayName]
     );
 
+    useDebouncedEffect(
+        () => {
+            if (serverInput != input) {
+                updateInput(output.id, input);
+            }
+        },
+        600,
+        [output.id, input]
+    );
+
     const handleInputChange = event => setInput(event.target.value);
 
     useEffect(() => {
         setServerDisplayName(output.display_name);
         setDisplayName(output.display_name);
     }, [output.display_name]);
+
+    useEffect(() => {
+        setServerInput(output.input_id);
+        setInput(output.input_id);
+    }, [output.input_id]);
 
     return (
         <Card className={classes.card}>
@@ -75,7 +97,7 @@ const Output = ({output}) => {
                 <TextField label="Name" value={displayName} onChange={e => setDisplayName(e.target.value)} />
             </CardContent>
             <CardContent>
-                {output.name}
+                <Typography>{output.name}</Typography>
             </CardContent>
             <CardContent>
                 <FormControl>

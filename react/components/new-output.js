@@ -32,6 +32,11 @@ const useStyles = makeStyles(theme => ({
         fontSize: theme.typography.pxToRem(15),
         color: theme.palette.text.secondary,
     },
+    add_button: {
+        position: 'absolute',
+        right: '5px',
+        bottom: '10px',
+    },
 }));
 
 function outputItem({ data, index, style }) {
@@ -52,6 +57,7 @@ outputItem.propTypes = {
 
 const CreateDevice = ({ createOutput, devices }) => {
     const [ device, setDevice ] = useState('');
+    const classes = useStyles();
 
     const handleChange = event => setDevice(event.target.value);
     const create = () => {
@@ -62,7 +68,7 @@ const CreateDevice = ({ createOutput, devices }) => {
 
     return (
         <div>
-            <FormControl>
+            <FormControl fullWidth="true">
                 <InputLabel>Output device</InputLabel>
                 <Select value={device} onChange={handleChange}>
                     {devices.map((device, index) => <MenuItem value={device} key={index}>{device}</MenuItem>)}
@@ -70,7 +76,7 @@ const CreateDevice = ({ createOutput, devices }) => {
                 <FormHelperText>The device to output to</FormHelperText>
             </FormControl>
             <Tooltip title="Create output device">
-                <Fab size="small" color="primary" onClick={create}>
+                <Fab size="small" color="primary" onClick={create} className={classes.add_button}>
                     <AddIcon />
                 </Fab>
             </Tooltip>
@@ -82,6 +88,7 @@ const CreateMultiplexer = ({ createOutput }) => {
     const [device, setDevice] = useState('');
     const [channels, setChannels] = useState('');
     const devices = useOutputs();
+    const classes = useStyles();
 
     const create = () => {
         if (device != '' && channels != '') {
@@ -92,7 +99,7 @@ const CreateMultiplexer = ({ createOutput }) => {
 
     return (
         <div>
-            <FormControl>
+            <FormControl fullWidth="true">
                 <InputLabel>Output device</InputLabel>
                 <Select value={device} onChange={event => setDevice(event.target.value)}>
                     {devices.filter(device => device.type == 'device').map(
@@ -101,9 +108,9 @@ const CreateMultiplexer = ({ createOutput }) => {
                 </Select>
                 <FormHelperText>The device to multiplex</FormHelperText>
             </FormControl>
-            <Input placeholder="Channels (e.g. 1 - mono, 2 - stereo)" onChange={event => setChannels(event.target.value)}/>
+            <Input placeholder="Channels (e.g. 1 - mono, 2 - stereo)" fullWidth="true" onChange={event => setChannels(event.target.value)}/>
             <Tooltip title="Create Icecast server">
-                <Fab size="small" color="primary" onClick={create}>
+                <Fab size="small" color="primary" onClick={create} className={classes.add_button}>
                     <AddIcon />
                 </Fab>
             </Tooltip>
@@ -114,6 +121,7 @@ const CreateMultiplexer = ({ createOutput }) => {
 const CreateIcecast = ({ createOutput }) => {
     const [server, setServer] = useState('');
     const [password, setPassword] = useState('');
+    const classes = useStyles();
 
     const create = () => {
         if (server != '') {
@@ -123,10 +131,10 @@ const CreateIcecast = ({ createOutput }) => {
 
     return (
         <div>
-            <Input placeholder="Icecast server and mount point" onChange={event => setServer(event.target.value)}/>
-            <Input placeholder="Source password" onChange={event => setPassword(event.target.value)}/>
+            <Input placeholder="Icecast server and mount point" fullWidth="true" onChange={event => setServer(event.target.value)}/>
+            <Input placeholder="Source password" fullWidth="true" onChange={event => setPassword(event.target.value)}/>
             <Tooltip title="Create Icecast server">
-                <Fab size="small" color="primary" onClick={create}>
+                <Fab size="small" color="primary" onClick={create} className={classes.add_button}>
                     <AddIcon />
                 </Fab>
             </Tooltip>
@@ -136,6 +144,7 @@ const CreateIcecast = ({ createOutput }) => {
 
 const CreateFile = ({ createOutput }) => {
     const [file, setFile] = useState('');
+    const classes = useStyles();
 
     const create = () => {
         if (file != '') {
@@ -145,9 +154,9 @@ const CreateFile = ({ createOutput }) => {
 
     return (
         <div>
-            <Input placeholder="The file to record to" onChange={event => setFile(event.target.value)}/>
+            <Input placeholder="The file to record to" fullWidth="true" onChange={event => setFile(event.target.value)}/>
             <Tooltip title="Create rolling file">
-                <Fab size="small" color="primary" onClick={create}>
+                <Fab size="small" color="primary" onClick={create} className={classes.add_button}>
                     <AddIcon />
                 </Fab>
             </Tooltip>
