@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import Input from './input.js';
-import { useInputs } from './input-store.js';
-import NewInputDialog from './new-input.js';
+import Output from './output.js';
+import { useOutputs } from './output-store.js';
+import NewOutputDialog from './new-output.js'
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import Fab from '@material-ui/core/Fab';
 import Tooltip from '@material-ui/core/Tooltip';
 import AddIcon from '@material-ui/icons/Add';
 
 const useStyles = makeStyles({
-    input_list: {
+    output_list: {
         position: 'relative',
         'min-height': '200px',
         'padding-bottom': '20px',
@@ -20,18 +20,17 @@ const useStyles = makeStyles({
     },
 });
 
-const Inputs = () => {
+const Outputs = () => {
     const classes = useStyles();
-    const inputs = useInputs();
+    const outputs = useOutputs();
     const [open, setOpen] = useState(false);
 
-    const handleClose = input => {
-        if (input != null) {
-            let new_device = { 'type': 'device', 'display_name': input, 'name': input };
-            fetch('/audio/input', {
+    const handleClose = (output) => {
+        if (output != null) {
+            fetch('/audio/output', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(new_device)
+                        body: JSON.stringify(output)
                     })
                 .then(response => response.json())
                 .catch(e => console.error(e));
@@ -40,16 +39,16 @@ const Inputs = () => {
     };
 
     return (
-        <div className={classes.input_list}>
-            {inputs.filter(input => input.type == 'device').map(input => <Input input={input} key={input.id} />)}
-            <Tooltip title="Add an input device">
+        <div className={classes.output_list}>
+            {outputs.map(output => <Output output={output} key={output.id} />)}
+            <Tooltip title="Add an output device">
                 <Fab size="small" color="primary" onClick={event => setOpen(true)} className={classes.add_button}>
                     <AddIcon />
                 </Fab>
             </Tooltip>
-            <NewInputDialog open={open} onClose={handleClose} />
+            <NewOutputDialog open={open} onClose={handleClose} />
         </div>
     );
 };
 
-export default Inputs;
+export default Outputs;

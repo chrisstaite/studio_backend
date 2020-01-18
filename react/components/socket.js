@@ -1,5 +1,16 @@
-import React from 'react'
+import React, { createContext, useContext } from 'react';
+import * as io from 'socket.io-client';
 
-const SocketContext = React.createContext();
+const SocketContext = createContext();
 
-export default SocketContext;
+const socket = io();
+
+const Socket = ({children}) => (
+    <SocketContext.Provider value={socket}>
+        {children}
+    </SocketContext.Provider>
+);
+
+const useSocket = () => useContext(SocketContext);
+
+export { Socket, useSocket };
