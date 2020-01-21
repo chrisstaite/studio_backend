@@ -6,9 +6,11 @@ import Typography from '@material-ui/core/Typography';
 import CardContent from '@material-ui/core/CardContent';
 import CardActions from '@material-ui/core/CardActions';
 import RemoveIcon from '@material-ui/icons/Remove';
+import AddIcon from '@material-ui/icons/Add';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
-import useServerValue from './server-value.js'
+import useServerValue from './server-value.js';
+import MixerChannel from './mixer-channel.js';
 
 const useStyles = makeStyles({
     card: {
@@ -17,37 +19,34 @@ const useStyles = makeStyles({
     },
 });
 
-function title(input) {
-    if (input.type == 'device') {
-        return 'Input device';
-    }
-}
-
-const Input = ({input}) => {
+const Mixer = ({mixer}) => {
     const updateName = name => {
         const data = new FormData();
         data.append('display_name', name);
-        fetch('/audio/input/' + input.id, {method: 'PUT', body: data});
+        fetch('/audio/mixer/' + mixer.id, {method: 'PUT', body: data});
     };
 
     const classes = useStyles();
-    const [displayName, setDisplayName] = useServerValue(input.display_name, updateName);
-    const removeInput = () => fetch('/audio/input/' + input.id, {method: 'DELETE'});
+    const [displayName, setDisplayName] = useServerValue(mixer.display_name, updateName);
+    const removeMixer = () => fetch('/audio/mixer/' + mixer.id, {method: 'DELETE'});
+    const addChannel = () => fetch('/audio/mixer/' + mixer.id + '/channel', {method: 'POST'});
 
     return (
         <Card className={classes.card}>
             <CardContent>
-                <Typography component="h5" variant="h5">
-                    {title(input)}
-                </Typography>
                 <TextField label="Name" value={displayName} onChange={e => setDisplayName(e.target.value)} />
             </CardContent>
             <CardContent>
-                <Typography>{input.name}</Typography>
+                {mixer.hasOwnProperty('channels') ? mixer.channels.map(channel => <MixerChannel mixer={mixer} channel={channel} key={channel.id} />) : null}
             </CardContent>
             <CardActions>
-                <Tooltip title="Remove this device">
-                    <Fab color="primary" size="small" onClick={removeInput}>
+                <Tooltip title="Add a channel">
+                    <Fab color="primary" size="small" onClick={addChannel}>
+                        <AddIcon />
+                    </Fab>
+                </Tooltip>
+                <Tooltip title="Remove this mixer">
+                    <Fab color="primary" size="small" onClick={removeMixer}>
                         <RemoveIcon />
                     </Fab>
                 </Tooltip>
@@ -56,4 +55,4 @@ const Input = ({input}) => {
     );
 }
 
-export default Input;
+export default Mixer;

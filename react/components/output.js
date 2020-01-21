@@ -14,6 +14,7 @@ import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import MenuItem from '@material-ui/core/MenuItem';
 import { useInputs } from './input-store.js';
+import { useMixers } from './mixer-store.js';
 import useServerValue from './server-value.js'
 
 const useStyles = makeStyles({
@@ -46,6 +47,7 @@ const Output = ({output}) => {
     const [displayName, setDisplayName] = useServerValue(output.display_name, updateName);
     const [input, setInput] = useServerValue(output.input_id, updateInput);
     const inputs = useInputs();
+    const mixers = useMixers();
 
     const removeOutput = () => fetch('/audio/output/' + output.id, {method: 'DELETE'});
 
@@ -63,7 +65,9 @@ const Output = ({output}) => {
             <CardContent>
                 <FormControl>
                     <InputLabel>Input device</InputLabel>
-                    <Select value={input} onChange={event => setInput(event.target.value)}>
+                    <Select value={input == null ? '' : input} onChange={event => setInput(event.target.value)}>
+                        <MenuItem value="">None</MenuItem>
+                        {mixers.map(mixer => <MenuItem value={mixer.id} key={mixer.id}>{mixer.display_name}</MenuItem>)}
                         {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
                     </Select>
                     <FormHelperText>The device to input from</FormHelperText>

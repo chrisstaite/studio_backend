@@ -41,7 +41,7 @@ const Inputs = () => {
 
     return (
         <div className={classes.input_list}>
-            {inputs.filter(input => input.type == 'device').map(input => <Input input={input} key={input.id} />)}
+            {inputs.map(input => <Input input={input} key={input.id} />)}
             <Tooltip title="Add an input device">
                 <Fab size="small" color="primary" onClick={event => setOpen(true)} className={classes.add_button}>
                     <AddIcon />

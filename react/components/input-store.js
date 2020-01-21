@@ -16,16 +16,10 @@ const InputStore = ({children}) => {
         socket.on('input_create', created);
         socket.on('input_update', updated);
         socket.on('input_remove', remove);
-        socket.on('mixer_create', created);
-        socket.on('mixer_update', updated);
-        socket.on('mixer_remove', remove);
         return () => {
             socket.off('input_create', created);
             socket.off('input_update', updated);
             socket.off('input_remove', remove);
-            socket.off('mixer_create', created);
-            socket.off('mixer_update', updated);
-            socket.off('mixer_remove', remove);
         };
     }, [socket]);
 
@@ -34,10 +28,6 @@ const InputStore = ({children}) => {
         fetch('/audio/input')
             .then(response => response.json())
             .then(inputs => setInputs(existing => existing.concat(inputs)))
-            .catch(e => console.error(e));
-        fetch('/audio/mixer')
-            .then(response => response.json())
-            .then(mixers => setInputs(existing => existing.concat(mixers)))
             .catch(e => console.error(e));
     }, []);
 
