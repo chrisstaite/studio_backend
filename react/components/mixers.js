@@ -23,11 +23,22 @@ const Mixers = () => {
     const classes = useStyles();
     const mixers = useMixers();
 
+    const addMixer = () => {
+        let newMixer = { 'display_name': 'New Mixer', 'channels': 2 };
+        fetch('/audio/mixer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(newMixer)
+                })
+            .then(response => response.json())
+            .catch(e => console.error(e));
+    };
+
     return (
         <div className={classes.mixer_list}>
             {mixers.map(mixer => <Mixer mixer={mixer} key={mixer.id} />)}
             <Tooltip title="Add a mixer">
-                <Fab size="small" color="primary" className={classes.add_button}>
+                <Fab size="small" color="primary" className={classes.add_button} onClick={addMixer}>
                     <AddIcon />
                 </Fab>
             </Tooltip>

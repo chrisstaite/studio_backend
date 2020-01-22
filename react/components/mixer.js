@@ -16,6 +16,18 @@ const useStyles = makeStyles({
     card: {
         display: 'inline-block',
         margin: '10px',
+        'min-height': '370px',
+    },
+    content: {
+        position: 'relative',
+        overflow: 'auto',
+    },
+    channel: {
+        float: 'left',
+        'min-width': '150px',
+    },
+    addChannel: {
+        'text-align': 'right',
     },
 });
 
@@ -36,15 +48,17 @@ const Mixer = ({mixer}) => {
             <CardContent>
                 <TextField label="Name" value={displayName} onChange={e => setDisplayName(e.target.value)} />
             </CardContent>
-            <CardContent>
-                {mixer.hasOwnProperty('channels') ? mixer.channels.map(channel => <MixerChannel mixer={mixer} channel={channel} key={channel.id} />) : null}
+            <CardContent className={classes.content}>
+                {mixer.hasOwnProperty('channels') ? mixer.channels.map(channel => <MixerChannel mixer={mixer} channel={channel} key={channel.id} className={classes.channel} />) : null}
+                <div className={classes.addChannel}>
+                    <Tooltip title="Add a channel">
+                        <Fab color="primary" size="small" onClick={addChannel}>
+                            <AddIcon />
+                        </Fab>
+                    </Tooltip>
+                </div>
             </CardContent>
             <CardActions>
-                <Tooltip title="Add a channel">
-                    <Fab color="primary" size="small" onClick={addChannel}>
-                        <AddIcon />
-                    </Fab>
-                </Tooltip>
                 <Tooltip title="Remove this mixer">
                     <Fab color="primary" size="small" onClick={removeMixer}>
                         <RemoveIcon />

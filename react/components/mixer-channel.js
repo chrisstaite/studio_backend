@@ -1,23 +1,40 @@
 import React from 'react';
+import makeStyles from '@material-ui/core/styles/makeStyles';
 import Slider from '@material-ui/core/Slider';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import Fab from '@material-ui/core/Fab';
 import RemoveIcon from '@material-ui/icons/Remove';
 import Tooltip from '@material-ui/core/Tooltip';
+import useServerValue from './server-value.js';
 import { useMixers } from './mixer-store.js';
 import { useInputs } from './input-store.js';
 
-const MixerChannel = ({mixer, channel}) => {
+const useStyles = makeStyles({
+    slider: {
+        height: '90px',
+        'text-align': 'center',
+    },
+    removeChannel: {
+        'text-align': 'right',
+    },
+    input: {
+        width: '100%',
+    },
+});
+
+const MixerChannel = ({mixer, channel, className}) => {
+    const classes = useStyles();
     const mixers = useMixers();
     const inputs = useInputs();
 
-    const setVolume = volume => {
-        // TODO: Debounce!
+    const updateVolume = volume => {
         const data = new FormData();
         data.append('volume', volume);
         fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'PUT', body: data});
     };
+    const [volume, setVolume] = useServerValue(channel.volume, updateVolume, 100);
+
     const removeChannel = () => {
         fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'DELETE'});
     };
@@ -28,21 +45,27 @@ const MixerChannel = ({mixer, channel}) => {
     };
 
     return (
-        <div>
-            <Slider min={0} max={2} step={0.01} orientation="vertical" value={channel.volume}
-                onChange={(event, value) => setVolume(value)} />
-            <Select value={channel.input == null ? '' : channel.input} onChange={event => setInput(event.target.value)}>
+        <div className={className}>
+            <div className={classes.slider}>
+                <Slider min={0} max={2} step={0.01} orientation="vertical" value={volume}
+                    onChange={(event, value) => setVolume(value)} />
+            </div>
+            <Select className={classes.input} displayEmpty={true}
+                    value={channel.input == null ? '' : channel.input}
+                    onChange={event => setInput(event.target.value)}>
                 <MenuItem value="">None</MenuItem>
                 {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
                 {mixers.filter(x => x.id != mixer.id).map(
                         mixer => <MenuItem value={mixer.id} key={mixer.id}>{mixer.display_name}</MenuItem>
                     )}
             </Select>
-            <Tooltip title="Remove channel">
-                <Fab color="primary" size="small" onClick={removeChannel}>
-                    <RemoveIcon />
-                </Fab>
-            </Tooltip>
+            <div className={classes.removeChannel}>
+                <Tooltip title="Remove channel">
+                    <Fab color="primary" size="small" onClick={removeChannel}>
+                        <RemoveIcon />
+                    </Fab>
+                </Tooltip>
+            </div>
         </div>
     );
 };

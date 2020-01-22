@@ -275,8 +275,8 @@ class Mixers(object):
         """
         if mixer.mixer.has_callbacks():
             raise exception.InUseException('Input has current outputs')
-        for i in range(mixer.mixer.get_channel_count()):
-            mixer.mixer.get_channel(i).input = None
+        for channel_id in mixer.mixer.get_channel_ids():
+            mixer.mixer.get_channel(channel_id).input = None
         cls._mixers.remove(mixer)
         session = persist.Session()
         session.query(persist.Mixer).filter_by(id=mixer.id).delete()

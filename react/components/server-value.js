@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useDebouncedEffect from 'use-debounced-effect';
 
-const useServerValue = (value, update) => {
+const useServerValue = (value, update, timeout=600) => {
     const [serverValue, setServerValue] = useState(value);
     const [localValue, setLocalValue] = useState(value);
 
@@ -11,7 +11,7 @@ const useServerValue = (value, update) => {
                 update(localValue);
             }
         },
-        600,
+        timeout,
         [localValue]
     );
 
