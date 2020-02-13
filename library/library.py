@@ -72,7 +72,8 @@ class Library(object):
         cls._directory_handlers.remove(handler)
         session = database.Session()
         session.query(database.Library).filter_by(location=directory).delete()
-        session.query(database.Track).filter(database.Track.location.startswith(directory)).delete()
+        session.query(database.Track).filter(database.Track.location.startswith(directory)).\
+            delete(synchronize_session='fetch')
         session.commit()
         session.close()
 

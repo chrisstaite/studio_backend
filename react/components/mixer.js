@@ -9,6 +9,8 @@ import RemoveIcon from '@material-ui/icons/Remove';
 import AddIcon from '@material-ui/icons/Add';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js';
 import MixerChannel from './mixer-channel.js';
 
@@ -40,7 +42,19 @@ const Mixer = ({mixer}) => {
 
     const classes = useStyles();
     const [displayName, setDisplayName] = useServerValue(mixer.display_name, updateName);
-    const removeMixer = () => fetch('/audio/mixer/' + mixer.id, {method: 'DELETE'});
+    const removeMixer = () => confirmAlert({
+        title: 'Delete mixer',
+        message: 'Are you sure you want to delete the mixer?',
+        buttons: [
+            {
+                label: 'Yes',
+                onClick: () => fetch('/audio/mixer/' + mixer.id, {method: 'DELETE'}),
+            },
+            {
+                label: 'No',
+            }
+        ]
+    });
     const addChannel = () => fetch('/audio/mixer/' + mixer.id + '/channel', {method: 'POST'});
 
     return (

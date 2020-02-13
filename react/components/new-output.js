@@ -109,7 +109,7 @@ const CreateMultiplexer = ({ createOutput }) => {
                 <FormHelperText>The device to multiplex</FormHelperText>
             </FormControl>
             <Input placeholder="Channels (e.g. 1 - mono, 2 - stereo)" fullWidth="true" onChange={event => setChannels(event.target.value)}/>
-            <Tooltip title="Create Icecast server">
+            <Tooltip title="Create multiplexer">
                 <Fab size="small" color="primary" onClick={create} className={classes.add_button}>
                     <AddIcon />
                 </Fab>

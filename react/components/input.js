@@ -8,6 +8,8 @@ import CardActions from '@material-ui/core/CardActions';
 import RemoveIcon from '@material-ui/icons/Remove';
 import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js'
 
 const useStyles = makeStyles({
@@ -32,7 +34,19 @@ const Input = ({input}) => {
 
     const classes = useStyles();
     const [displayName, setDisplayName] = useServerValue(input.display_name, updateName);
-    const removeInput = () => fetch('/audio/input/' + input.id, {method: 'DELETE'});
+    const removeInput = () => confirmAlert({
+        title: 'Delete input',
+        message: 'Are you sure you want to delete the input?',
+        buttons: [
+            {
+                label: 'Yes',
+                onClick: () => fetch('/audio/input/' + input.id, {method: 'DELETE'}),
+            },
+            {
+                label: 'No',
+            }
+        ]
+    });
 
     return (
         <Card className={classes.card}>

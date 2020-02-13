@@ -6,6 +6,8 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Fab from '@material-ui/core/Fab';
 import RemoveIcon from '@material-ui/icons/Remove';
 import Tooltip from '@material-ui/core/Tooltip';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js';
 import { useMixers } from './mixer-store.js';
 import { useInputs } from './input-store.js';
@@ -35,9 +37,19 @@ const MixerChannel = ({mixer, channel, className}) => {
     };
     const [volume, setVolume] = useServerValue(channel.volume, updateVolume, 100);
 
-    const removeChannel = () => {
-        fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'DELETE'});
-    };
+    const removeChannel = () => confirmAlert({
+        title: 'Delete mixer channel',
+        message: 'Are you sure you want to delete the channel?',
+        buttons: [
+            {
+                label: 'Yes',
+                onClick: () => fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'DELETE'}),
+            },
+            {
+                label: 'No',
+            }
+        ]
+    });
     const setInput = input => {
         const data = new FormData();
         data.append('input', input);

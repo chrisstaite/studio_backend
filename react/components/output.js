@@ -13,6 +13,8 @@ import InputLabel from '@material-ui/core/InputLabel';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import MenuItem from '@material-ui/core/MenuItem';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useInputs } from './input-store.js';
 import { useMixers } from './mixer-store.js';
 import useServerValue from './server-value.js'
@@ -49,7 +51,19 @@ const Output = ({output}) => {
     const inputs = useInputs();
     const mixers = useMixers();
 
-    const removeOutput = () => fetch('/audio/output/' + output.id, {method: 'DELETE'});
+    const removeOutput = () => confirmAlert({
+        title: 'Delete output',
+        message: 'Are you sure you want to delete the output?',
+        buttons: [
+            {
+                label: 'Yes',
+                onClick: () => fetch('/audio/output/' + output.id, {method: 'DELETE'}),
+            },
+            {
+                label: 'No',
+            }
+        ]
+    });
 
     return (
         <Card className={classes.card}>
