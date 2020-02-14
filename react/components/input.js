@@ -10,7 +10,8 @@ import Tooltip from '@material-ui/core/Tooltip';
 import TextField from '@material-ui/core/TextField';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
-import useServerValue from './server-value.js'
+import useServerValue from './server-value.js';
+import { fetchGet, fetchDelete } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     card: {
@@ -26,11 +27,8 @@ function title(input) {
 }
 
 const Input = ({input}) => {
-    const updateName = name => {
-        const data = new FormData();
-        data.append('display_name', name);
-        fetch('/audio/input/' + input.id, {method: 'PUT', body: data});
-    };
+    const updateName = name =>
+        fetchPut('/audio/input/' + input.id, {'display_name': name});
 
     const classes = useStyles();
     const [displayName, setDisplayName] = useServerValue(input.display_name, updateName);
@@ -40,7 +38,7 @@ const Input = ({input}) => {
         buttons: [
             {
                 label: 'Yes',
-                onClick: () => fetch('/audio/input/' + input.id, {method: 'DELETE'}),
+                onClick: () => fetchDelete('/audio/input/' + input.id),
             },
             {
                 label: 'No',

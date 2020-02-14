@@ -6,6 +6,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import { FixedSizeList } from 'react-window';
+import { fetchGet } from './fetch-wrapper.js';
 
 function inputItem({ data, index, style }) {
     const { handleListItemClick, devices } = data;
@@ -38,8 +39,7 @@ function NewInputDialog({ onClose, open }) {
     // Get the list of available devices
     useEffect(() => {
         if (open == true) {
-            fetch('/audio/input/devices')
-                .then(response => response.json())
+            fetchGet('/audio/input/devices')
                 .then(devices => devices.filter(device => inputs.findIndex(item => item.name == device) == -1))
                 .then(devices => setDevices(devices))
                 .catch(e => console.error(e));

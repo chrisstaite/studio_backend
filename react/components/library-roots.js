@@ -14,6 +14,7 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import './library-roots.css';
 import DirectoryPicker from './directory-picker.js';
+import { fetchPost, fetchGet, fetchDelete } from './fetch-wrapper.js';
 
 const Root = ({ root, deleteRoot }) => {
     return (
@@ -31,8 +32,7 @@ const LibraryRoots = ({ onClose, open }) => {
 
     useEffect(() => {
         if (open) {
-            fetch('/library')
-                .then(response => response.json())
+            fetchGet('/library')
                 .then(response => setRoots(response))
                 .catch(e => console.error(e));
         }
@@ -40,11 +40,7 @@ const LibraryRoots = ({ onClose, open }) => {
 
     const addRootDirectory = directory => {
         if (directory != null) {
-            fetch('/library', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ 'directory': directory })
-                    })
+            fetchPost('/library', { 'directory': directory })
                 .catch(e => console.error(e));
             setRoots(roots => roots.concat([directory]));
         }
@@ -59,11 +55,7 @@ const LibraryRoots = ({ onClose, open }) => {
                 {
                     label: 'Yes',
                     onClick: () => {
-                        fetch('/library', {
-                                    method: 'DELETE',
-                                    headers: {'Content-Type': 'application/json'},
-                                    body: JSON.stringify({ 'directory': root })
-                                })
+                        fetchDelete('/library', { 'directory': root })
                             .catch(e => console.error(e));
                         setRoots(roots => roots.filter(x => x != root));
                     },

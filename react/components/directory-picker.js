@@ -13,6 +13,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import Tooltip from '@material-ui/core/Tooltip';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
+import { fetchGet } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     root: {
@@ -60,8 +61,7 @@ const Directory = ({ path, expandedList, expanded, setDirectory, ...props }) => 
     useEffect(() => {
         if (!loaded && expanded)
         {
-            fetch('/browse' + path)
-                .then(response => response.json())
+            fetchGet('/browse' + path)
                 .then(directories => {
                     if (Array.isArray(directories)) {
                         setListing(directories);

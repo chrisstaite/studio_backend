@@ -19,6 +19,7 @@ import LibraryMusicIcon from '@material-ui/icons/LibraryMusic';
 import CloseIcon from '@material-ui/icons/Close';
 import PlayIcon from '@material-ui/icons/PlayArrow';
 import StopIcon from '@material-ui/icons/Stop';
+import EditIcon from '@material-ui/icons/Edit';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
@@ -29,6 +30,7 @@ import { Droppable, Draggable } from "react-beautiful-dnd";
 import useDebouncedEffect from 'use-debounced-effect';
 import Time from './time.js';
 import LibraryRoots from './library-roots.js';
+import { fetchPut, fetchGet } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     row: {
@@ -39,6 +41,12 @@ const useStyles = makeStyles({
     },
     table: {
         display: 'table',
+    },
+    edit: {
+        width: '0.5em',
+        verticalAlign: 'bottom',
+        cursor: 'pointer',
+        paddingRight: '0.2em',
     },
 });
 
@@ -58,7 +66,11 @@ const LibraryHeader = () => (
 );
 
 const Track = ({row, player, index, provided, ...props}) => {
+    const classes = useStyles();
     const [ state, setState ] = useState('stopped');
+    const [ editing, setEditing ] = useState(false);
+    const [ artist, setArtist ] = useState(row.artist);
+    const [ title, setTitle ] = useState(row.title);
 
     const play = () => {
         setState('loading');
@@ -77,17 +89,35 @@ const Track = ({row, player, index, provided, ...props}) => {
         player.src = '';
     };
 
-    // TODO: Add library edit
+    useEffect(() => {
+        if (!editing && (row.artist != artist || row.title != title))
+        {
+            fetchPut('/library/track/' + row.id, {'artist': artist, 'title': title})
+                .catch(e => console.error(e));
+        }
+    }, [editing, row, artist, title]);
+
     return (
         <TableRow ref={provided ? provided.innerRef : null}
                 {...(provided ? provided.draggableProps : null)}
                 {...(provided ? provided.dragHandleProps : null)}
                 {...props}>
             <TableCell>
-                {row.artist}
+                <EditIcon className={classes.edit} onClick={() => setEditing(editing => !editing)} />
+                {editing &&
+                    <FormControl>
+                        <InputLabel>Artist</InputLabel>
+                        <Input value={artist} onChange={e => setArtist()}/>
+                    </FormControl>}
+                {!editing && artist}
             </TableCell>
             <TableCell>
-                {row.title}
+                {editing &&
+                    <FormControl>
+                        <InputLabel>Title</InputLabel>
+                        <Input value={title} onChange={e => setTitle()}/>
+                    </FormControl>}
+                {!editing && title}
             </TableCell>
             <TableCell>
                 <Time time={row.length} />
@@ -165,8 +195,7 @@ const Library = forwardRef((props, ref) => {
     };
 
     const loadTracks = () => {
-        fetch(`/library/track?results=${rowsPerPage}&page=${page}&query=${search}`)
-            .then(response => response.json())
+        fetchGet(`/library/track?results=${rowsPerPage}&page=${page}&query=${search}`)
             .then(({count, tracks}) => { setRows(tracks); setCount(count); })
             .catch(e => console.error(e));
     };

@@ -6,6 +6,7 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 import Fab from '@material-ui/core/Fab';
 import Tooltip from '@material-ui/core/Tooltip';
 import AddIcon from '@material-ui/icons/Add';
+import { fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     input_list: {
@@ -28,12 +29,7 @@ const Inputs = () => {
     const handleClose = input => {
         if (input != null) {
             let new_device = { 'type': 'device', 'display_name': input, 'name': input };
-            fetch('/audio/input', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(new_device)
-                    })
-                .then(response => response.json())
+            fetchPost('/audio/input', new_device)
                 .catch(e => console.error(e));
         }
         setOpen(false);

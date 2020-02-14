@@ -11,6 +11,7 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js';
 import { useMixers } from './mixer-store.js';
 import { useInputs } from './input-store.js';
+import { fetchPut, fetchDelete, fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     slider: {
@@ -31,9 +32,7 @@ const MixerChannel = ({mixer, channel, className}) => {
     const inputs = useInputs();
 
     const updateVolume = volume => {
-        const data = new FormData();
-        data.append('volume', volume);
-        fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'PUT', body: data});
+        fetchPut('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {'volume': volume});
     };
     const [volume, setVolume] = useServerValue(channel.volume, updateVolume, 100);
 
@@ -43,7 +42,7 @@ const MixerChannel = ({mixer, channel, className}) => {
         buttons: [
             {
                 label: 'Yes',
-                onClick: () => fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'DELETE'}),
+                onClick: () => fetchDelete('/audio/mixer/' + mixer.id + '/channel/' + channel.id),
             },
             {
                 label: 'No',
@@ -51,9 +50,7 @@ const MixerChannel = ({mixer, channel, className}) => {
         ]
     });
     const setInput = input => {
-        const data = new FormData();
-        data.append('input', input);
-        fetch('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {method: 'PUT', body: data});
+        fetchPut('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {'input': input});
     };
 
     return (

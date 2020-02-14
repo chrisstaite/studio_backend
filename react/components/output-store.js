@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useSocket } from './socket.js';
+import { fetchGet } from './fetch-wrapper.js';
 
 const OutputStoreContext = createContext([]);
 
@@ -25,8 +26,7 @@ const OutputStore = ({children}) => {
 
     // Get the initial state by requesting it
     useEffect(() => {
-        fetch('/audio/output')
-            .then(response => response.json())
+        fetchGet('/audio/output')
             .then(outputs => setOutputs(outputs))
             .catch(e => console.error(e));
     }, []);

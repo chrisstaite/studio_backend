@@ -43,9 +43,8 @@ class Playlist(object):
 
     @tracks.setter
     def tracks(self, tracks: typing.List[int]):
-        query = self._session.query(database.PlaylistTrack). \
-            filter(database.PlaylistTrack.playlist == self.id)
-        query.delete()
+        self._session.query(database.PlaylistTrack). \
+            filter(database.PlaylistTrack.playlist == self.id).delete()
         for index, track in enumerate(tracks):
             self._session.add(database.PlaylistTrack(playlist=self.id, track=track, index=index))
         self._session.commit()
@@ -55,6 +54,8 @@ class Playlist(object):
         return self._playlist.id
 
     def delete(self):
+        self._session.query(database.PlaylistTrack). \
+            filter(database.PlaylistTrack.playlist == self.id).delete()
         self._session.delete(self._playlist)
         self._session.commit()
         self._session.close()

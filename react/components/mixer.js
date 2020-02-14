@@ -13,6 +13,7 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js';
 import MixerChannel from './mixer-channel.js';
+import { fetchPut, fetchDelete, fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     card: {
@@ -35,9 +36,7 @@ const useStyles = makeStyles({
 
 const Mixer = ({mixer}) => {
     const updateName = name => {
-        const data = new FormData();
-        data.append('display_name', name);
-        fetch('/audio/mixer/' + mixer.id, {method: 'PUT', body: data});
+        fetchPut('/audio/mixer/' + mixer.id, {'display_name': name});
     };
 
     const classes = useStyles();
@@ -48,14 +47,14 @@ const Mixer = ({mixer}) => {
         buttons: [
             {
                 label: 'Yes',
-                onClick: () => fetch('/audio/mixer/' + mixer.id, {method: 'DELETE'}),
+                onClick: () => fetchDelete('/audio/mixer/' + mixer.id),
             },
             {
                 label: 'No',
             }
         ]
     });
-    const addChannel = () => fetch('/audio/mixer/' + mixer.id + '/channel', {method: 'POST'});
+    const addChannel = () => fetchPost('/audio/mixer/' + mixer.id + '/channel');
 
     return (
         <Card className={classes.card}>

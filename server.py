@@ -66,36 +66,6 @@ class Server(object):
         npm = os.path.join(bin_dir, npm_bin)
         npx = os.path.join(bin_dir, npx_bin)
         node = os.path.join(bin_dir, node_bin)
-        frontend = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'frontend')
-        ng = os.path.join(frontend, 'node_modules', '@angular', 'cli', 'bin', 'ng')
-        # Install the required packages
-        new_env = os.environ.copy()
-        new_env['PATH'] = bin_dir + os.pathsep + os.environ['PATH']
-        subprocess.call([npm, 'config', 'set', 'cafile', certifi.where()], env=new_env)
-        subprocess.call([npm, 'install'], cwd=frontend, env=new_env)
-        # Run the build and allow it to watch for changes
-        node_builder = [
-            node, ng, 'build',
-            '--aot',
-            '--base-href', '/frontend/',
-            '--watch'
-        ]
-        if not getattr(settings, 'FRONTEND_DEBUG', False):
-            node_builder += ['--prod', '--configuration', 'production']
-        self._angular = subprocess.Popen(node_builder, cwd=frontend, env=new_env)
-        # Serve the built directory
-        dist = os.path.join(frontend, 'dist', 'frontend')
-        self._app.add_url_rule(
-            '/frontend/<path:filename>',
-            endpoint='frontend',
-            view_func=functools.partial(flask.send_from_directory, dist)
-        )
-        # Serve the frontend index
-        self._app.add_url_rule(
-            '/frontend/',
-            endpoint='frontend_index',
-            view_func=functools.partial(flask.send_from_directory, dist, 'index.html')
-        )
         # Configure the react frontend
         react = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'react')
         # Install the react dependencies

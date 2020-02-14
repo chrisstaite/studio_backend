@@ -5,6 +5,7 @@ import Fab from '@material-ui/core/Fab';
 import Tooltip from '@material-ui/core/Tooltip';
 import AddIcon from '@material-ui/icons/Add';
 import Mixer from './mixer.js';
+import { fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     mixer_list: {
@@ -25,12 +26,7 @@ const Mixers = () => {
 
     const addMixer = () => {
         let newMixer = { 'display_name': 'New Mixer', 'channels': 2 };
-        fetch('/audio/mixer', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(newMixer)
-                })
-            .then(response => response.json())
+        fetchPost('/audio/mixer', newMixer)
             .catch(e => console.error(e));
     };
 

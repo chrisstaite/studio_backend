@@ -24,7 +24,8 @@ import useDebouncedEffect from 'use-debounced-effect';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import Time from './time.js';
-import NewPlaylistDialog from './new-playlist.js'
+import NewPlaylistDialog from './new-playlist.js';
+import { fetchGet, fetchPost, fetchPut, fetchDelete } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     placeholder: {
@@ -115,8 +116,7 @@ const Playlist = forwardRef((props, ref) => {
     }));
 
     useEffect(() => {
-        fetch('/playlist')
-            .then(response => response.json())
+        fetchGet('/playlist')
             .then(playlists => setPlaylists(playlists))
             .catch(e => console.error(e));
     }, []);
@@ -126,11 +126,11 @@ const Playlist = forwardRef((props, ref) => {
             setRows([]);
             setNextId(0);
         } else {
-            fetch('/playlist/' + playlist)
-                .then(response => response.json())
+            fetchGet('/playlist/' + playlist)
                 .then(tracks => {
                     let id = 0;
-                    setPlaylistLoading(true); setRows(tracks.map(track => {
+                    setPlaylistLoading(true);
+                    setRows(tracks.map(track => {
                         track.unique_id = id;
                         id += 1;
                         return track;
@@ -143,15 +143,13 @@ const Playlist = forwardRef((props, ref) => {
 
     const handleClose = (playlist) => {
         if (playlist !== null) {
-            fetch('/playlist', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ 'name': playlist })
-                    })
-                .then(response => response.text())
+            fetchPost('/playlist', {'name': playlist})
                 .then(response => setPlaylists(playlists => {
                     var playlists = playlists.concat([{ 'id': response, 'name': playlist }]);
-                    setTimeout(() => setPlaylist(response), 0);
+                    setPlaylistLoading(true);
+                    setRows([]);
+                    setNextId(0);
+                    setPlaylist(response);
                     return playlists;
                 }))
                 .catch(e => console.error(e));
@@ -168,11 +166,7 @@ const Playlist = forwardRef((props, ref) => {
             if (playlist == '') {
                 return;
             }
-            fetch('/playlist/' + playlist, {
-                        method: 'PUT',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({'tracks': rows.map(row => row.id)})
-                    })
+            fetchPut('/playlist/' + playlist, {'tracks': rows.map(row => row.id)})
                 .catch(e => console.error(e));
         },
         200,
@@ -189,7 +183,7 @@ const Playlist = forwardRef((props, ref) => {
                     label: 'Yes',
                     onClick: () => {
                         setPlaylist('');
-                        fetch('/playlist/' + deletePlaylist, {method: 'DELETE'})
+                        fetchDelete('/playlist/' + deletePlaylist)
                             .then(_ => setPlaylists(playlists => playlists.filter(x => x['id'] != deletePlaylist)))
                             .catch(e => console.error(e));
                     },

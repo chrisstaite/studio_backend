@@ -17,7 +17,8 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useInputs } from './input-store.js';
 import { useMixers } from './mixer-store.js';
-import useServerValue from './server-value.js'
+import useServerValue from './server-value.js';
+import { fetchPut, fetchDelete } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
   card: {
@@ -38,9 +39,7 @@ function title(output) {
 
 const Output = ({output}) => {
     const updateOutput = (name, value) => {
-        const data = new FormData();
-        data.append(name, value);
-        fetch('/audio/output/' + output.id, {method: 'PUT', body: data});
+        fetchPut('/audio/output/' + output.id, {name: value});
     };
     const updateName = name => updateOutput('display_name', name);
     const updateInput = input => updateOutput('input', input);
@@ -57,7 +56,7 @@ const Output = ({output}) => {
         buttons: [
             {
                 label: 'Yes',
-                onClick: () => fetch('/audio/output/' + output.id, {method: 'DELETE'}),
+                onClick: () => fetchDelete('/audio/output/' + output.id),
             },
             {
                 label: 'No',

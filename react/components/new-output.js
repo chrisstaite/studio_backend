@@ -21,6 +21,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import AddIcon from '@material-ui/icons/Add';
 import { FixedSizeList } from 'react-window';
 import { useOutputs } from './output-store.js';
+import { fetchGet } from './fetch-wrapper.js';
 
 const useStyles = makeStyles(theme => ({
     heading: {
@@ -176,8 +177,7 @@ function NewOutputDialog({ onClose, open }) {
     // Get the list of available devices
     useEffect(() => {
         if (open == true) {
-            fetch('/audio/output/devices')
-                .then(response => response.json())
+            fetchGet('/audio/output/devices')
                 .then(devices => devices.filter(
                     device => outputs.findIndex(item => item.type == 'device' && item.name == device) == -1))
                 .then(devices => setDevices(devices))

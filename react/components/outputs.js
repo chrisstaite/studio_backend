@@ -6,6 +6,7 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 import Fab from '@material-ui/core/Fab';
 import Tooltip from '@material-ui/core/Tooltip';
 import AddIcon from '@material-ui/icons/Add';
+import { fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
     output_list: {
@@ -27,12 +28,7 @@ const Outputs = () => {
 
     const handleClose = (output) => {
         if (output != null) {
-            fetch('/audio/output', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(output)
-                    })
-                .then(response => response.json())
+            fetchPost('/audio/output', output)
                 .catch(e => console.error(e));
         }
         setOpen(false);

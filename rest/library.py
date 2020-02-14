@@ -2,6 +2,7 @@ import os
 import typing
 import flask
 import mimetypes
+import flask
 import flask_restful.reqparse
 import library
 
@@ -279,6 +280,8 @@ class Playlist(flask_restful.Resource):
             playlist.name = args['name']
         if args['tracks'] is not None:
             playlist.tracks = args['tracks']
+        elif 'tracks' in flask.request.json:
+            playlist.tracks = []
         return True
 
     @staticmethod

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useSocket } from './socket.js';
+import { fetchGet } from './fetch-wrapper.js';
 
 const MixerStoreContext = createContext([]);
 
@@ -56,8 +57,7 @@ const MixerStore = ({children}) => {
     }, [socket]);
 
     const loadMixerChannels = mixers => {
-        mixers.forEach(mixer => fetch('/audio/mixer/' + mixer.id)
-            .then(response => response.json())
+        mixers.forEach(mixer => fetchGet('/audio/mixer/' + mixer.id)
             .then(data => setMixers(mixers => mixers.concat([data])))
             .catch(e => console.error(e))
         );
@@ -65,8 +65,7 @@ const MixerStore = ({children}) => {
 
     // Get the initial state by requesting it
     useEffect(() => {
-        fetch('/audio/mixer')
-            .then(response => response.json())
+        fetchGet('/audio/mixer')
             .then(mixers => loadMixerChannels(mixers))
             .catch(e => console.error(e));
     }, []);
