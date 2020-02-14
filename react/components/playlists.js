@@ -17,7 +17,7 @@ const Playlists = () => {
         }
 
         // Only interested in updating the playlists, not the libraries
-        if (destination.droppableId !== 'playlist') {
+        if (destination === null || destination.droppableId !== 'playlist') {
             return;
         }
 
