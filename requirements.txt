@@ -16,4 +16,4 @@ SQLAlchemy==1.2.8
 typing==3.6.4
 typing-extensions==3.7.4.1
 watchdog==0.8.3
-Werkzeug==0.14.1
+Werkzeug==0.15.3
