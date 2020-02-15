@@ -27,7 +27,7 @@ const InputStore = ({children}) => {
     // Get the initial state by requesting it
     useEffect(() => {
         fetchGet('/audio/input')
-            .then(inputs => setInputs(existing => existing.concat(inputs)))
+            .then(inputs => setInputs(inputs))
             .catch(e => console.error(e));
     }, []);
 

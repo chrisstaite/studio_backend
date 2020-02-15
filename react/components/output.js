@@ -17,6 +17,7 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useInputs } from './input-store.js';
 import { useMixers } from './mixer-store.js';
+import { usePlayers } from './player-store.js';
 import useServerValue from './server-value.js';
 import { fetchPut, fetchDelete } from './fetch-wrapper.js';
 
@@ -39,7 +40,7 @@ function title(output) {
 
 const Output = ({output}) => {
     const updateOutput = (name, value) => {
-        fetchPut('/audio/output/' + output.id, {name: value});
+        fetchPut('/audio/output/' + output.id, {[name]: value});
     };
     const updateName = name => updateOutput('display_name', name);
     const updateInput = input => updateOutput('input', input);
@@ -49,6 +50,7 @@ const Output = ({output}) => {
     const [input, setInput] = useServerValue(output.input_id, updateInput);
     const inputs = useInputs();
     const mixers = useMixers();
+    const players = usePlayers();
 
     const removeOutput = () => confirmAlert({
         title: 'Delete output',
@@ -81,6 +83,7 @@ const Output = ({output}) => {
                     <Select value={input == null ? '' : input} onChange={event => setInput(event.target.value)}>
                         <MenuItem value="">None</MenuItem>
                         {mixers.map(mixer => <MenuItem value={mixer.id} key={mixer.id}>{mixer.display_name}</MenuItem>)}
+                        {players.map(player => <MenuItem value={player.id} key={player.id}>{player.name}</MenuItem>)}
                         {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
                     </Select>
                     <FormHelperText>The device to input from</FormHelperText>

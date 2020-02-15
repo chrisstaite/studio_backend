@@ -1,3 +1,4 @@
+import flask
 import flask_restful.reqparse
 import typing
 import library
@@ -31,7 +32,10 @@ class LivePlayers(flask_restful.Resource):
         :return:  The ID of the new live player
         """
         args = self._parser.parse_args(strict=True)
-        return library.LivePlayer.create(args['name'])
+        player_id = library.LivePlayer.create(args['name'])
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('player_create', {'id': player_id, 'name': args['name']})
+        return player_id
 
 
 class LivePlayer(flask_restful.Resource):
@@ -49,13 +53,13 @@ class LivePlayer(flask_restful.Resource):
         )
 
     @staticmethod
-    def get(id: int) -> str:
+    def get(id: int) -> typing.Dict:
         """
         Get the name of the player
         :param id:  The ID of the player
-        :return:  A list of all the live players
+        :return:  A dictionary containing the name of the player
         """
-        return library.LivePlayer(id).name
+        return {'name': library.LivePlayer(id).name}
 
     def put(self, id: int) -> int:
         """
@@ -65,6 +69,8 @@ class LivePlayer(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         library.LivePlayer(id).name = args['name']
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('player_update', {'id': id, 'name': args['name']})
         return True
 
     @staticmethod
@@ -75,6 +81,8 @@ class LivePlayer(flask_restful.Resource):
         :return:  Always true
         """
         library.LivePlayer(id).delete()
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('player_remove', {'id': id})
         return True
 
 
@@ -108,7 +116,7 @@ class LivePlayerTracks(flask_restful.Resource):
 
     def put(self, id) -> bool:
         """
-        Change the name of the player
+        Add tracks to the player
         :param id:  The ID of the player
         :return:  Always true
         """

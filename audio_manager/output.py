@@ -149,7 +149,7 @@ class Output(object):
         Set the input to the given ID
         :param input_id:  The ID of the input to use
         :raises ValueError:  If the input_id is not valid
-        :raises InUseException:  If the output is multiplexec
+        :raises InUseException:  If the output is multiplexed
         """
         if isinstance(self._output.input, MultiplexedOutput):
             raise exception.InUseException()

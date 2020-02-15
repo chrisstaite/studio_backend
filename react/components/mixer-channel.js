@@ -11,6 +11,7 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import useServerValue from './server-value.js';
 import { useMixers } from './mixer-store.js';
 import { useInputs } from './input-store.js';
+import { usePlayers } from './player-store.js';
 import { fetchPut, fetchDelete, fetchPost } from './fetch-wrapper.js';
 
 const useStyles = makeStyles({
@@ -30,6 +31,7 @@ const MixerChannel = ({mixer, channel, className}) => {
     const classes = useStyles();
     const mixers = useMixers();
     const inputs = useInputs();
+    const players = usePlayers();
 
     const updateVolume = volume => {
         fetchPut('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {'volume': volume});
@@ -63,10 +65,11 @@ const MixerChannel = ({mixer, channel, className}) => {
                     value={channel.input == null ? '' : channel.input}
                     onChange={event => setInput(event.target.value)}>
                 <MenuItem value="">None</MenuItem>
-                {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
                 {mixers.filter(x => x.id != mixer.id).map(
                         mixer => <MenuItem value={mixer.id} key={mixer.id}>{mixer.display_name}</MenuItem>
                     )}
+                {players.map(player => <MenuItem value={player.id} key={player.id}>{player.name}</MenuItem>)}
+                {inputs.map(input => <MenuItem value={input.id} key={input.id}>{input.display_name}</MenuItem>)}
             </Select>
             <div className={classes.removeChannel}>
                 <Tooltip title="Remove channel">
