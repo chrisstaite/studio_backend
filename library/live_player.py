@@ -1,4 +1,5 @@
 import typing
+import flask
 from . import database
 from . import playlist
 
@@ -13,19 +14,27 @@ class LivePlayer(object):
         session = database.Session()
         try:
             for playlist in session.query(database.LivePlayer):
-                yield playlist
+                yield LivePlayer(playlist.id)
         finally:
             session.close()
 
     @classmethod
     def create(cls, name: str) -> int:
         session = database.Session()
-        playlist = database.LivePlayer(name=name, index=0, state=database.LivePlayerState.paused, jingle_plays=0)
+        playlist = database.LivePlayer(name=name, state=database.LivePlayerState.paused, jingle_plays=0)
         session.add(playlist)
         session.commit()
         import audio_manager
         audio_manager.live_player.LivePlayers.add(LivePlayer(playlist.id))
         return playlist.id
+
+    @staticmethod
+    def _emit(name, value):
+        socketio = flask.current_app.extensions['socketio']
+        if socketio is not None:
+            socketio.emit(name, value)
+        else:
+            print('Unable to emit', name)
 
     def __init__(self, id: int):
         """
@@ -55,6 +64,10 @@ class LivePlayer(object):
         self._session.commit()
         self._session.close()
 
+    def _get_player(self):
+        import audio_manager
+        return audio_manager.live_player.LivePlayers.get_player(self._playlist.id)
+
     @property
     def state(self) -> database.LivePlayerState:
         return self._playlist.state
@@ -63,15 +76,8 @@ class LivePlayer(object):
     def state(self, state: database.LivePlayerState):
         self._playlist.state = state
         self._session.commit()
-
-    @property
-    def index(self) -> int:
-        return self._playlist.index
-
-    @index.setter
-    def index(self, index: int):
-        self._playlist.index = index
-        self._session.commit()
+        self._get_player().set_state(state)
+        self._emit('player_state_' + str(self.id), state.name)
 
     @property
     def jingle_playlist(self) -> typing.Optional[playlist.Playlist]:
@@ -82,8 +88,10 @@ class LivePlayer(object):
     def jingle_playlist(self, playlist: playlist.Playlist):
         if playlist is None:
             self._playlist.jingle_playlist = None
+            self._emit('player_jingles_' + str(self.id), '')
         else:
             self._playlist.jingle_playlist = playlist.id
+            self._emit('player_jingles_' + str(self.id), playlist.id)
         self._session.commit()
 
     @property
@@ -106,6 +114,34 @@ class LivePlayer(object):
         self._playlist.jingle_plays = jingle_plays
         self._session.commit()
 
+    def current_track(self) -> typing.Optional[typing.Tuple[int, database.LivePlayerType]]:
+        query = self._session.query(database.LivePlayerTrack). \
+            filter(database.LivePlayerTrack.playlist == self.id). \
+            order_by(database.LivePlayerTrack.index)
+        track = query.first()
+        if track is None:
+            return None
+        return track.track, track.type
+
+    def remove_track(self):
+        query = self._session.query(database.LivePlayerTrack). \
+            filter(database.LivePlayerTrack.playlist == self.id). \
+            order_by(database.LivePlayerTrack.index)
+        query.limit(1).delete()
+        self._session.query(database.LivePlayerTrack). \
+            update({'index': (database.LivePlayerTrack.index - 1)})
+        self._session.commit()
+        self._send_tracks()
+
+    def _send_tracks(self):
+        query = self._session.query(database.LivePlayerTrack). \
+            filter(database.LivePlayerTrack.playlist == self.id). \
+            order_by(database.LivePlayerTrack.index)
+        self._emit(
+            'player_tracks_' + str(self.id),
+            [{'id': track.track, 'type': track.type.name} for track in query.all()]
+        )
+
     @property
     def tracks(self) -> typing.List[typing.Tuple[int, database.LivePlayerType]]:
         query = self._session.query(database.LivePlayerTrack). \
@@ -115,12 +151,22 @@ class LivePlayer(object):
 
     @tracks.setter
     def tracks(self, tracks: typing.List[typing.Tuple[int, database.LivePlayerType]]):
+        current_track = self._session.query(database.LivePlayerTrack). \
+            filter(database.LivePlayerTrack.playlist == self.id). \
+            order_by(database.LivePlayerTrack.index). \
+            first()
         query = self._session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id)
         query.delete()
         for index, (track, type_) in enumerate(tracks):
             self._session.add(database.LivePlayerTrack(playlist=self.id, track=track, index=index, type=type_))
         self._session.commit()
+        if len(tracks) > 0 and (current_track is None or tracks[0][0] != current_track.track):
+            self._get_player().set_track(tracks[0][0])
+        self._emit(
+            'player_tracks_' + str(self.id),
+            [{'id': track, 'type': type_.name} for track, type_ in tracks]
+        )
 
     def __iter__(self) -> typing.Iterable[database.Track]:
         """

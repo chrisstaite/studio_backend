@@ -2,6 +2,8 @@ import typing
 import library
 import audio
 import settings
+import flask
+import threading
 from . import exception
 
 
@@ -11,23 +13,57 @@ class LivePlayer(object):
         self._player = player
         self._playlist = audio.playlist.Playlist(settings.BLOCK_SIZE)
         self._playlist.set_next_callback(self._track_finished)
-        if self._player.state == library.database.LivePlayerState.playing:
-            current = self._player.tracks[self._player.index]
+        self._update_event = None
+        if self._player.state == library.database.LivePlayerState.paused:
+            self._playlist.pause()
+        else:
+            self._start_thread()
+        current = self._player.current_track()
+        if current is not None:
             self._playlist.set_file(library.tracks.Track(current[0]).location)
+
+    def _start_thread(self):
+        self._update_event = threading.Event()
+        socketio = flask.current_app.extensions['socketio']
+        socketio.start_background_task(self._update_time, socketio)
+
+    def _stop_thread(self):
+        if self._update_event is not None:
+            self._update_event.set()
+
+    def _update_time(self, socketio):
+        while not self._update_event.wait(1):
+            socketio.emit(
+                'player_tracktime_' + str(self._player.id), self._playlist.current_time()
+            )
+        self._update_event = None
 
     def _track_finished(self):
         # TODO: Handle jingle playing
-        index = self._player.index
-        current = self._player.tracks[index]
+        current = self._player.current_track()
         if current[1] == library.database.LivePlayerType.loop:
             self._playlist.set_file(library.tracks.Track(current[0]).location)
         elif current[1] == library.database.LivePlayerType.play_next:
-            index += 1
-            current = self._player.tracks[index]
-            self._playlist.set_file(library.tracks.Track(current[0]).location)
-            self._player.index = index
+            self._player.remove_track()
+            current = self._player.current_track()
+            if current is not None:
+                self._playlist.set_file(library.tracks.Track(current[0]).location)
         else:
+            self._playlist.pause()
             self._player.state = library.database.LivePlayerState.paused
+
+    def set_state(self, state: library.database.LivePlayerState):
+        if state == library.database.LivePlayerState.playing:
+            if self._update_event is None:
+                self._start_thread()
+            self._playlist.play()
+        else:
+            if self._update_event is not None:
+                self._stop_thread()
+            self._playlist.pause()
+
+    def set_track(self, track_id: int):
+        self._playlist.set_file(library.tracks.Track(track_id).location)
 
     @property
     def player(self):
@@ -89,6 +125,6 @@ class LivePlayers(object):
         :raises ValueError:  The player is not found
         """
         try:
-            return next(x for x in cls._players if x.playlist is player or x.id == player)
+            return next(x for x in cls._players if x.playlist is player or str(x.id) == str(player))
         except StopIteration:
             raise ValueError('No such player found')

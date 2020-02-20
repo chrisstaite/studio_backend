@@ -9,7 +9,6 @@ import os
 import os.path
 import functools
 import platform
-import rest
 import uuid
 import settings
 import certifi
@@ -29,20 +28,16 @@ class Server(object):
         self._socketio = flask_socketio.SocketIO(self._app, async_mode='eventlet')
         self._angular = None
         self._react = None
-        self._setup_rest()
-        self._setup_socketio()
-        self._setup_angular()
-
-    def _setup_socketio(self) -> None:
-        """
-        Setup the SocketIO event handlers
-        """
+        with self._app.app_context():
+            self._setup_rest()
+            self._setup_angular()
 
     def _setup_rest(self) -> None:
         """
         Add all of the resources to the server
         """
         api = flask_restful.Api(self._app)
+        import rest
         rest.audio_output.setup_api(api)
         rest.audio_input.setup_api(api)
         rest.stream_sink.setup_api(api)

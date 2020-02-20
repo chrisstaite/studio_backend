@@ -86,8 +86,6 @@ class LivePlayer(Base):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     # The name of the playlist
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
-    # The current index within the player that is being played
-    index = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
     # The state of the playlist
     state = sqlalchemy.Column(sqlalchemy.Enum(LivePlayerState), nullable=False)
     # The playlist that contains the jingles

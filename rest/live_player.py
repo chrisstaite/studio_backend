@@ -68,9 +68,9 @@ class LivePlayer(flask_restful.Resource):
         :return:  Always true
         """
         args = self._parser.parse_args(strict=True)
-        library.LivePlayer(id).name = args['name']
+        library.LivePlayer(id).name = args.name
         socketio = flask.current_app.extensions['socketio']
-        socketio.emit('player_update', {'id': id, 'name': args['name']})
+        socketio.emit('player_update', {'id': id, 'name': args.name})
         return True
 
     @staticmethod
@@ -97,7 +97,11 @@ class LivePlayerTracks(flask_restful.Resource):
         """
         self._parser = flask_restful.reqparse.RequestParser()
         self._parser.add_argument(
-            'tracks', type=int, action='append', help='The tracks for the playlist', required=True
+            'tracks', type=int, action='append', help='The track IDs for the playlist', required=True
+        )
+        self._parser.add_argument(
+            'types', type=str, choices=[t.name for t in library.database.LivePlayerType],
+            action='append', help='Types for each of the given tracks', required=True
         )
 
     def get(self, id) -> typing.List[typing.Dict]:
@@ -121,8 +125,12 @@ class LivePlayerTracks(flask_restful.Resource):
         :return:  Always true
         """
         args = self._parser.parse_args(strict=True)
+        if len(args.tracks) != len(args.types):
+            flask_restful.abort(400, message='Each track must have a type')
         player = library.LivePlayer(id)
-        # TODO
+        player.tracks = [
+            (track, library.database.LivePlayerType[type_]) for track, type_ in zip(args.tracks, args.types)
+        ]
         return True
 
 
@@ -157,42 +165,7 @@ class LivePlayerState(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         player = library.LivePlayer(id)
-        player.state = library.database.LivePlayerState[args['state']]
-        return True
-
-
-class LivePlayerIndex(flask_restful.Resource):
-    """
-    Handler for the current track being played of a live player
-    """
-
-    def __init__(self):
-        """
-        Create the parser for setting the current index
-        """
-        self._parser = flask_restful.reqparse.RequestParser()
-        self._parser.add_argument(
-            'index', type=int, help='The new index of the player', required=True
-        )
-
-    def get(self, id) -> int:
-        """
-        Get the index of the player playlist
-        :param id:  The ID of the player to get the playlist index of
-        :return:  The current index of the player
-        """
-        player = library.LivePlayer(id)
-        return player.index
-
-    def put(self, id) -> bool:
-        """
-        Set the current playlist index of the player
-        :param id:  The ID of the player to set the index of
-        :return:  Always true
-        """
-        args = self._parser.parse_args(strict=True)
-        player = library.LivePlayer(id)
-        player.index = args['index']
+        player.state = library.database.LivePlayerState[args.state]
         return True
 
 
@@ -228,7 +201,7 @@ class LivePlayerJinglePlaylist(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         player = library.LivePlayer(id)
-        player.jingle_playlist = args['id']
+        player.jingle_playlist = args.id
         return True
 
 
@@ -263,7 +236,9 @@ class LivePlayerJingleCount(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         player = library.LivePlayer(id)
-        player.jingle_count = args['count']
+        player.jingle_count = args.count
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('player_jinglecount_' + str(id), args.count)
         return True
 
 
@@ -291,7 +266,6 @@ def setup_api(api):
     api.add_resource(LivePlayer, '/player/<int:id>')
     api.add_resource(LivePlayerTracks, '/player/<int:id>/tracks')
     api.add_resource(LivePlayerState, '/player/<int:id>/state')
-    api.add_resource(LivePlayerIndex, '/player/<int:id>/state')
     api.add_resource(LivePlayerJinglePlaylist, '/player/<int:id>/jingle_playlist')
     api.add_resource(LivePlayerJingleCount, '/player/<int:id>/jingle_count')
     api.add_resource(LivePlayerJinglePlays, '/player/<int:id>/jingle_plays')

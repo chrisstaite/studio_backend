@@ -17,6 +17,7 @@ class Playlist(callback.Callback):
         super().__init__()
         self._callback = None
         self._file = None
+        self._paused = False
         self._blocks = blocks
 
     @property
@@ -46,7 +47,15 @@ class Playlist(callback.Callback):
         self._file = file.File(filename, self._blocks)
         self._file.add_callback(self._forward)
         self._file.set_end_callback(self._next_file)
-        self._file.play()
+        if not self._paused:
+            self._file.play()
+
+    def current_time(self) -> float:
+        """
+        Get the number of seconds into the current file
+        :return:  The number of seconds into the current file
+        """
+        return 0.0 if self._file is None else self._file.time()
 
     def _next_file(self) -> None:
         """
@@ -67,13 +76,26 @@ class Playlist(callback.Callback):
         """
         Play the playlist
         """
-        self._file.set_end_callback(self._next_file)
-        self._file.play()
+        if self._paused and self._file is not None:
+            self._file.play()
+        elif self._file is not None:
+            self._file.set_end_callback(self._next_file)
+            self._file.play()
+
+    def pause(self) -> None:
+        """
+        Pause the playlist
+        """
+        self._paused = True
+        if self._file is not None:
+            self._file.set_end_callback(None)
+            self._file.pause()
 
     def stop(self) -> None:
         """
         Stop playing
         """
+        self._paused = True
         if self._file is not None:
             self._file.set_end_callback(None)
             self._file.stop()
