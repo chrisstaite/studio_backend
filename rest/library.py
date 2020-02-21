@@ -91,20 +91,8 @@ class TrackSearch(flask_restful.Resource):
 
 class Track(flask_restful.Resource):
     """
-    Handler for playing tracks and updating their details
+    Handler for playing tracks
     """
-
-    def __init__(self):
-        """
-        Create the parser for querying
-        """
-        self._parser = flask_restful.reqparse.RequestParser()
-        self._parser.add_argument(
-            'artist', type=str, help='The artist name'
-        )
-        self._parser.add_argument(
-            'title', type=str, help='The title name'
-        )
 
     def get(self, id: int) -> typing.Dict:
         """
@@ -124,6 +112,33 @@ class Track(flask_restful.Resource):
             mimetype = 'audio/mpeg'
         return flask.Response(generate(track), mimetype=mimetype)
 
+
+class TrackInfo(flask_restful.Resource):
+    """
+    Handler for getting and updating track information
+    """
+
+    def __init__(self):
+        """
+        Create the parser for querying
+        """
+        self._parser = flask_restful.reqparse.RequestParser()
+        self._parser.add_argument(
+            'artist', type=str, help='The artist name'
+        )
+        self._parser.add_argument(
+            'title', type=str, help='The title name'
+        )
+
+    def get(self, id: int) -> typing.Dict:
+        """
+        Get the track information for a given track
+        :param id:  The ID of the track
+        :return:  The track information
+        """
+        track = library.Track(id)
+        return {'title': track.title, 'artist': track.artist, 'length': track.length}
+
     def put(self, id: int) -> bool:
         """
         Change the track details
@@ -132,10 +147,12 @@ class Track(flask_restful.Resource):
         """
         args = self._parser.parse_args(strict=True)
         track = library.Track(id)
-        if args['title'] is not None:
-            track.title = args['title']
-        if args['artist'] is not None:
-            track.artist = args['artist']
+        if args.title is not None:
+            track.title = args.title
+        if args.artist is not None:
+            track.artist = args.artist
+        socketio = flask.current_app.extensions['socketio']
+        socketio.emit('track_update', {'id': id, 'title': track.title, 'artist': track.artist, 'length': track.length})
         return True
 
 
@@ -304,6 +321,7 @@ def setup_api(api):
     api.add_resource(Library, '/library')
     api.add_resource(TrackSearch, '/library/track')
     api.add_resource(Track, '/library/track/<int:id>')
+    api.add_resource(TrackInfo, '/library/track/<int:id>/info')
     api.add_resource(Playlists, '/playlist')
     api.add_resource(Playlist, '/playlist/<int:id>')
 

@@ -9,6 +9,9 @@ class LivePlayer(object):
     A special kind of playlist that supports pauses, jingles and bed
     """
 
+    # Cached socketio instance
+    _socketio = None
+
     @staticmethod
     def list() -> typing.Iterable['LivePlayer']:
         session = database.Session()
@@ -30,11 +33,14 @@ class LivePlayer(object):
 
     @staticmethod
     def _emit(name, value):
-        socketio = flask.current_app.extensions['socketio']
+        try:
+            socketio = flask.current_app.extensions['socketio']
+            LivePlayer._socketio = socketio
+        except RuntimeError:
+            # Running in background thread, use cache
+            socketio = LivePlayer._socketio
         if socketio is not None:
             socketio.emit(name, value)
-        else:
-            print('Unable to emit', name)
 
     def __init__(self, id: int):
         """
@@ -127,7 +133,7 @@ class LivePlayer(object):
         query = self._session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
-        query.limit(1).delete()
+        self._session.delete(query.first())
         self._session.query(database.LivePlayerTrack). \
             update({'index': (database.LivePlayerTrack.index - 1)})
         self._session.commit()
@@ -163,6 +169,8 @@ class LivePlayer(object):
         self._session.commit()
         if len(tracks) > 0 and (current_track is None or tracks[0][0] != current_track.track):
             self._get_player().set_track(tracks[0][0])
+        elif len(tracks) == 0:
+            self._get_player().playlist.set_file(None)
         self._emit(
             'player_tracks_' + str(self.id),
             [{'id': track, 'type': type_.name} for track, type_ in tracks]

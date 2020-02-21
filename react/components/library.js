@@ -92,7 +92,7 @@ const Track = ({row, player, index, provided, ...props}) => {
     useEffect(() => {
         if (!editing && (row.artist != artist || row.title != title))
         {
-            fetchPut('/library/track/' + row.id, {'artist': artist, 'title': title})
+            fetchPut('/library/track/' + row.id + '/info', {artist: artist, title: title})
                 .catch(e => console.error(e));
         }
     }, [editing, row, artist, title]);
@@ -107,7 +107,7 @@ const Track = ({row, player, index, provided, ...props}) => {
                 {editing &&
                     <FormControl>
                         <InputLabel>Artist</InputLabel>
-                        <Input value={artist} onChange={e => setArtist()}/>
+                        <Input value={artist} onChange={e => setArtist(e.target.value)}/>
                     </FormControl>}
                 {!editing && artist}
             </TableCell>
@@ -115,7 +115,7 @@ const Track = ({row, player, index, provided, ...props}) => {
                 {editing &&
                     <FormControl>
                         <InputLabel>Title</InputLabel>
-                        <Input value={title} onChange={e => setTitle()}/>
+                        <Input value={title} onChange={e => setTitle(e.target.value)}/>
                     </FormControl>}
                 {!editing && title}
             </TableCell>

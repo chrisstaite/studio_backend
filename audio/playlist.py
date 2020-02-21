@@ -26,10 +26,9 @@ class Playlist(callback.Callback):
         Get the number of output channels for this playlist
         :return:  The number of output channels
         """
-        # Force to stereo
-        return 2
+        return 2 if self._file is None else self._file.channels
 
-    def set_next_callback(self, callback: typing.Callable) -> None:
+    def set_next_callback(self, callback: typing.Optional[typing.Callable]) -> None:
         """
         Set the callback that is called when the current file has finished playing
         :param callback:  The callback to call
@@ -42,8 +41,9 @@ class Playlist(callback.Callback):
         :param filename:  The file to set as playing
         """
         if self._file is not None:
+            paused = self._paused
             self.stop()
-        # TODO: Handle mono files
+            self._paused = paused
         self._file = file.File(filename, self._blocks)
         self._file.add_callback(self._forward)
         self._file.set_end_callback(self._next_file)

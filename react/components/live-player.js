@@ -11,17 +11,29 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import PlayIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
+import LoopIcon from '@material-ui/icons/Loop';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import SkipNextIcon from '@material-ui/icons/SkipNext';
+import CancelIcon from '@material-ui/icons/Cancel';
+import ToggleButton from '@material-ui/lab/ToggleButton';
+import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import Tooltip from '@material-ui/core/Tooltip';
 import Fab from '@material-ui/core/Fab';
+import Skeleton from '@material-ui/lab/Skeleton';
 import Autocomplete from '@material-ui/lab/Autocomplete';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useSocket } from './socket.js';
 import { fetchGet, fetchPut } from './fetch-wrapper.js';
 import { usePlayers } from './player-store.js';
+import Time from './time.js';
 
 const useStyles = makeStyles({
     live_player: {
         'min-height': '200px',
         'padding-bottom': '20px',
+    },
+    table: {
+        display: 'table',
     },
 });
 
@@ -43,26 +55,98 @@ const PlaylistHeader = () => (
     </TableRow>
 );
 
-const PlaylistItem = ({ item }) => {
+const PlaylistItem = React.forwardRef(({ index, item, setType, time, skip, remove, ...props }, ref) => {
+    const [ track, setTrack ] = useState(false);
+
+    useEffect(() => {
+        fetchGet('/library/track/' + item.id + '/info')
+            .then(track => setTrack(track))
+            .catch(e => console.error(e));
+    }, [item.id]);
+
+    const toggleType = () => {
+        let type = '';
+        if (item.type == 'play_next') {
+            type = 'pause_after';
+        } else if (item.type == 'pause_after') {
+            type = 'loop';
+        } else {
+            type = 'play_next';
+        }
+        setType(type);
+    };
+
+    let percent = 0.0;
+    if (track) {
+        percent = time * 100 / track.length;
+    }
+    const style = {
+        background: 'linear-gradient(to right, #dedede ' + percent + '%, transparent 0%)',
+    };
+
     return (
-        <TableRow>
+        <TableRow style={style} ref={ref} {...props}>
             <TableCell>
             </TableCell>
             <TableCell>
+                {!track && <Skeleton variant="text" />}
+                {track && track.artist}
             </TableCell>
             <TableCell>
-                {item.id}
+                {!track && <Skeleton variant="text" />}
+                {track && track.title}
             </TableCell>
             <TableCell>
+                {!track && <Skeleton variant="text" />}
+                {track && <Time time={track.length} />}
             </TableCell>
             <TableCell>
-                {item.type}
+                <ToggleButtonGroup value={item.type} exclusive onChange={(e, type) => setType(type)}>
+                    <ToggleButton value='play_next'>
+                        <ExpandMoreIcon />
+                    </ToggleButton>
+                    <ToggleButton value='pause_after'>
+                        <PauseIcon />
+                    </ToggleButton>
+                    <ToggleButton value='loop'>
+                        <LoopIcon />
+                    </ToggleButton>
+                </ToggleButtonGroup>
+                {skip && <Tooltip title="Skip to next">
+                    <Fab color="primary" size="small" onClick={skip}>
+                        <SkipNextIcon />
+                    </Fab>
+                </Tooltip>}
+                {remove && <Tooltip title="Remove track">
+                    <Fab color="primary" size="small" onClick={remove}>
+                        <CancelIcon />
+                    </Fab>
+                </Tooltip>}
             </TableCell>
         </TableRow>
     );
+});
+
+const DraggablePlaylistItem = ({ index, ...props }) => {
+    const classes = useStyles();
+
+    if (index == 0) {
+        return (<PlaylistItem {...props}/>);
+    }
+
+    return (
+        <Draggable draggableId={'track-' + index} index={index}>
+            {(provided, snapshot) =>
+                <PlaylistItem
+                    className={snapshot.isDragging ? classes.table : ''}
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    {...props}/>}
+        </Draggable>
+    );
 };
 
-// TODO: Add playlist too
 const SearchBox = ({ addTrack }) => {
     const [ search, setSearch ] = useState('');
     const [ options, setOptions ] = useState([]);
@@ -95,6 +179,37 @@ const SearchBox = ({ addTrack }) => {
             style={{ width: 300 }}
             renderInput={params => (
                 <TextField {...params} label="Add track" variant="outlined" fullWidth />
+            )}/>
+    );
+};
+
+const PlaylistBox = ({ addPlaylist }) => {
+    const [ search, setSearch ] = useState('');
+    const [ playlists, setPlaylists ] = useState([]);
+    const [ loading, setLoading ] = useState(true);
+
+    useEffect(() => {
+        fetchGet('/playlist')
+            .then(playlists => setPlaylists(playlists))
+            .then(() => setLoading(false))
+            .catch(e => console.error(e));
+    }, []);
+
+    const inputChange = (event, value, reason) => {
+        setSearch(reason == 'input' ? value : '');
+    };
+
+    return (
+        <Autocomplete
+            onInputChange={inputChange}
+            onChange={(event, value) => {value && addPlaylist(value.id);}}
+            options={playlists}
+            inputValue={search}
+            getOptionLabel={option => option.name}
+            loading={loading}
+            style={{ width: 300 }}
+            renderInput={params => (
+                <TextField {...params} label="Add playlist" variant="outlined" fullWidth />
             )}/>
     );
 };
@@ -150,22 +265,59 @@ const LivePlayer = ({ player_id }) => {
         };
     }, [socket, player_id]);
 
-    const addTrack = trackId => {
-        let newTracks = tracks.slice(0);
-        newTracks.splice(tracks.length > 0 ? 1 : 0, 0, {'id': trackId, 'type': 'play_next'});
-        let allTracks = {'tracks': newTracks.map(x => x.id), 'types': newTracks.map(x => x.type)};
+    const putTracks = tracks => {
+        let allTracks = {tracks: tracks.map(x => x.id), types: tracks.map(x => x.type)};
         fetchPut('/player/' + player_id + '/tracks', allTracks)
             .catch(e => console.error(e));
     };
 
-    const play = () => {
-        fetchPut('/player/' + player_id + '/state', {'state': 'playing'})
+    const addTrack = trackId => {
+        let newTracks = tracks.slice(0);
+        newTracks.splice(tracks.length > 0 ? 1 : 0, 0, {id: trackId, type: 'play_next'});
+        putTracks(newTracks);
+    };
+
+    const addPlaylist = playlistId => {
+        fetchGet('/playlist/' + playlistId)
+            .then(playlistTracks => putTracks(
+                tracks.concat(playlistTracks.map(track => ({id: track.id, type: 'play_next'}))))
+            )
             .catch(e => console.error(e));
     };
 
-    const pause = () => {
-        fetchPut('/player/' + player_id + '/state', {'state': 'paused'})
+    const putState = state => {
+        fetchPut('/player/' + player_id + '/state', {state: state})
             .catch(e => console.error(e));
+    };
+
+    const setType = (index, type) => {
+        let updated = tracks.slice(0);
+        updated[index].type = type;
+        putTracks(updated);
+    };
+
+    const remove = index => {
+        let newTracks = tracks.slice(0);
+        newTracks.splice(index, 1);
+        putTracks(newTracks);
+    };
+
+    const skip = () => {
+        putTracks(tracks.slice(1));
+    };
+
+    const onDragEnd = ({ source, destination }) => {
+        if (destination == null ||
+                destination.index == 0 ||
+                source.index == destination.index) {
+            return;
+        }
+        setTracks(tracks => {
+            const newTracks = tracks.slice(0);
+            newTracks.splice(destination.index, 0, newTracks.splice(source.index, 1)[0]);
+            putTracks(newTracks);
+            return newTracks;
+        });
     };
 
     return (
@@ -175,25 +327,43 @@ const LivePlayer = ({ player_id }) => {
             </Typography>
             <Paper>
                 <SearchBox addTrack={addTrack} />
+                <PlaylistBox addPlaylist={addPlaylist} />
                 <TableContainer>
                     <Table size='medium'>
                         <TableHead>
                             <PlaylistHeader />
                         </TableHead>
-                        <TableBody>
-                            {tracks.map((track, index) => <PlaylistItem item={track} key={index} />)}
-                        </TableBody>
+                        <DragDropContext onDragEnd={onDragEnd}>
+                            <Droppable droppableId={`live_player_${player_id}`}>
+                                {(provided, snapshot) =>
+                                    <TableBody ref={provided.innerRef}
+                                            className={classes.relative}
+                                            {...provided.droppableProps}>
+                                        {tracks.map((track, index) =>
+                                            <DraggablePlaylistItem
+                                                item={track}
+                                                setType={type => setType(index, type)}
+                                                time={index == 0 ? currentTime : 0.0}
+                                                skip={index == 0 ? skip : undefined}
+                                                remove={index == 0 ? undefined : () => remove(index)}
+                                                index={index}
+                                                key={index} />)}
+                                        {provided.placeholder}
+                                    </TableBody>
+                                }
+                            </Droppable>
+                        </DragDropContext>
                     </Table>
                 </TableContainer>
                 {state == 'paused' &&
                     <Tooltip title="Play">
-                        <Fab color="primary" size="small" onClick={play}>
+                        <Fab color="primary" size="small" onClick={() => putState('playing')}>
                             <PlayIcon />
                         </Fab>
                     </Tooltip>}
                 {state == 'playing' &&
                     <Tooltip title="Pause">
-                        <Fab color="primary" size="small" onClick={pause}>
+                        <Fab color="primary" size="small" onClick={() => putState('paused')}>
                             <PauseIcon />
                         </Fab>
                     </Tooltip>}

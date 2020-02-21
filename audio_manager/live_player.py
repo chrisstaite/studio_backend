@@ -44,13 +44,17 @@ class LivePlayer(object):
         if current[1] == library.database.LivePlayerType.loop:
             self._playlist.set_file(library.tracks.Track(current[0]).location)
         elif current[1] == library.database.LivePlayerType.play_next:
-            self._player.remove_track()
-            current = self._player.current_track()
-            if current is not None:
-                self._playlist.set_file(library.tracks.Track(current[0]).location)
+            self._play_next()
         else:
             self._playlist.pause()
             self._player.state = library.database.LivePlayerState.paused
+            self._play_next()
+
+    def _play_next(self):
+        self._player.remove_track()
+        current = self._player.current_track()
+        if current is not None:
+            self._playlist.set_file(library.tracks.Track(current[0]).location)
 
     def set_state(self, state: library.database.LivePlayerState):
         if state == library.database.LivePlayerState.playing:
@@ -63,7 +67,9 @@ class LivePlayer(object):
             self._playlist.pause()
 
     def set_track(self, track_id: int):
+        self._playlist.set_next_callback(None)
         self._playlist.set_file(library.tracks.Track(track_id).location)
+        self._playlist.set_next_callback(self._track_finished)
 
     @property
     def player(self):
