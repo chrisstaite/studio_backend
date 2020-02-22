@@ -169,7 +169,9 @@ class LivePlayer(object):
         self._session.commit()
         if len(tracks) > 0 and (current_track is None or tracks[0][0] != current_track.track):
             self._get_player().set_track(tracks[0][0])
+            self._emit('player_tracktime_' + str(self.id), 0)
         elif len(tracks) == 0:
+            self._emit('player_tracktime_' + str(self.id), 0)
             self._get_player().playlist.set_file(None)
         self._emit(
             'player_tracks_' + str(self.id),

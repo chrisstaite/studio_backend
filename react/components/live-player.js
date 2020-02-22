@@ -29,12 +29,16 @@ import Time from './time.js';
 
 const useStyles = makeStyles({
     live_player: {
-        'min-height': '200px',
-        'padding-bottom': '20px',
+        minHeight: '200px',
+        paddingBottom: '20px',
+        padding: '10px',
     },
     table: {
         display: 'table',
     },
+    track_button: {
+        float: 'right',
+    }
 });
 
 const PlaylistHeader = () => (
@@ -55,12 +59,33 @@ const PlaylistHeader = () => (
     </TableRow>
 );
 
-const PlaylistItem = React.forwardRef(({ index, item, setType, time, skip, remove, ...props }, ref) => {
+const DateTime = ({ time }) => {
+    if (!time) {
+        return (<span />);
+    }
+    let date = new Date(time * 1000);
+    let now = new Date();
+    let justDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    let justDateNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let days = (justDate.getTime() - justDateNow.getTime()) / (1000 * 60 * 60 * 24);
+    return (
+        <span>
+            {date.getHours().toString().padStart(2, '0')}:
+            {date.getMinutes().toString().padStart(2, '0')}:
+            {date.getSeconds().toString().padStart(2, '0')}
+            {days > 0 && ` +${days} day`}
+        </span>
+    );
+};
+
+const PlaylistItem = React.forwardRef(
+        ({ index, item, setType, startTime, setLength, time, skip, remove, ...props }, ref) => {
+    const classes = useStyles();
     const [ track, setTrack ] = useState(false);
 
     useEffect(() => {
         fetchGet('/library/track/' + item.id + '/info')
-            .then(track => setTrack(track))
+            .then(track => { setTrack(track); setLength(track.length); })
             .catch(e => console.error(e));
     }, [item.id]);
 
@@ -87,6 +112,7 @@ const PlaylistItem = React.forwardRef(({ index, item, setType, time, skip, remov
     return (
         <TableRow style={style} ref={ref} {...props}>
             <TableCell>
+                {index > 0 && <DateTime time={startTime} />}
             </TableCell>
             <TableCell>
                 {!track && <Skeleton variant="text" />}
@@ -112,16 +138,18 @@ const PlaylistItem = React.forwardRef(({ index, item, setType, time, skip, remov
                         <LoopIcon />
                     </ToggleButton>
                 </ToggleButtonGroup>
-                {skip && <Tooltip title="Skip to next">
-                    <Fab color="primary" size="small" onClick={skip}>
-                        <SkipNextIcon />
-                    </Fab>
-                </Tooltip>}
-                {remove && <Tooltip title="Remove track">
-                    <Fab color="primary" size="small" onClick={remove}>
-                        <CancelIcon />
-                    </Fab>
-                </Tooltip>}
+                <div className={classes.track_button}>
+                    {skip && <Tooltip title="Skip to next">
+                        <Fab color="primary" size="small" onClick={skip}>
+                            <SkipNextIcon />
+                        </Fab>
+                    </Tooltip>}
+                    {remove && <Tooltip title="Remove track">
+                        <Fab color="primary" size="small" onClick={remove}>
+                            <CancelIcon />
+                        </Fab>
+                    </Tooltip>}
+                </div>
             </TableCell>
         </TableRow>
     );
@@ -131,7 +159,7 @@ const DraggablePlaylistItem = ({ index, ...props }) => {
     const classes = useStyles();
 
     if (index == 0) {
-        return (<PlaylistItem {...props}/>);
+        return (<PlaylistItem index={index} {...props}/>);
     }
 
     return (
@@ -140,6 +168,7 @@ const DraggablePlaylistItem = ({ index, ...props }) => {
                 <PlaylistItem
                     className={snapshot.isDragging ? classes.table : ''}
                     ref={provided.innerRef}
+                    index={index}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
                     {...props}/>}
@@ -176,7 +205,7 @@ const SearchBox = ({ addTrack }) => {
             options={options}
             getOptionLabel={option => `${option.artist} - ${option.title}`}
             loading={loading}
-            style={{ width: 300 }}
+            style={{ width: 300, float: 'left' }}
             renderInput={params => (
                 <TextField {...params} label="Add track" variant="outlined" fullWidth />
             )}/>
@@ -207,7 +236,7 @@ const PlaylistBox = ({ addPlaylist }) => {
             inputValue={search}
             getOptionLabel={option => option.name}
             loading={loading}
-            style={{ width: 300 }}
+            style={{ width: 300, float: 'left' }}
             renderInput={params => (
                 <TextField {...params} label="Add playlist" variant="outlined" fullWidth />
             )}/>
@@ -223,6 +252,8 @@ const LivePlayer = ({ player_id }) => {
     const [ state, setState ] = useState('paused');
     const [ jinglePlaylist, setJinglePlaylist ] = useState('');
     const [ currentTime, setCurrentTime ] = useState(0.0);
+    const [ startTime, setStartTime ] = useState(0);
+    const [ trackLengths, setTrackLengths ] = useState([]);
 
     useEffect(() => {
         fetchGet('/player/' + player_id)
@@ -320,14 +351,58 @@ const LivePlayer = ({ player_id }) => {
         });
     };
 
+    const setTrackLength = (index, length) => {
+        setTrackLengths(lengths => {
+            var newArray;
+            if (lengths.length <= index) {
+                newArray = lengths.fill(0, lengths.length, index);
+            } else {
+                newArray = lengths.slice(0);
+            }
+            newArray[index] = length;
+            return newArray;
+        });
+    };
+
+    const updateTime = () =>
+        setStartTime(Math.floor(new Date().getTime() / 1000) - Math.round(currentTime));
+
+    useEffect(updateTime, [currentTime]);
+
+    useEffect(() => {
+        if (state == 'playing') {
+            return;
+        }
+        let interval = setInterval(updateTime, 1000);
+        return () => {
+            clearInterval(interval);
+        };
+    }, [state]);
+
+    const getStartTime = index => {
+        return trackLengths.slice(0, index).reduce((a, b) => a + b, startTime);
+    };
+
     return (
-        <div className={classes.live_player}>
+        <Paper className={classes.live_player}>
             <Typography component="h5" variant="h5">
                 {name}
             </Typography>
             <Paper>
                 <SearchBox addTrack={addTrack} />
                 <PlaylistBox addPlaylist={addPlaylist} />
+                {state == 'paused' &&
+                    <Tooltip title="Play">
+                        <Fab color="primary" size="small" onClick={() => putState('playing')}>
+                            <PlayIcon />
+                        </Fab>
+                    </Tooltip>}
+                {state == 'playing' &&
+                    <Tooltip title="Pause">
+                        <Fab color="primary" size="small" onClick={() => putState('paused')}>
+                            <PauseIcon />
+                        </Fab>
+                    </Tooltip>}
                 <TableContainer>
                     <Table size='medium'>
                         <TableHead>
@@ -346,6 +421,8 @@ const LivePlayer = ({ player_id }) => {
                                                 time={index == 0 ? currentTime : 0.0}
                                                 skip={index == 0 ? skip : undefined}
                                                 remove={index == 0 ? undefined : () => remove(index)}
+                                                startTime={getStartTime(index)}
+                                                setLength={length => setTrackLength(index, length)}
                                                 index={index}
                                                 key={index} />)}
                                         {provided.placeholder}
@@ -355,20 +432,8 @@ const LivePlayer = ({ player_id }) => {
                         </DragDropContext>
                     </Table>
                 </TableContainer>
-                {state == 'paused' &&
-                    <Tooltip title="Play">
-                        <Fab color="primary" size="small" onClick={() => putState('playing')}>
-                            <PlayIcon />
-                        </Fab>
-                    </Tooltip>}
-                {state == 'playing' &&
-                    <Tooltip title="Pause">
-                        <Fab color="primary" size="small" onClick={() => putState('paused')}>
-                            <PauseIcon />
-                        </Fab>
-                    </Tooltip>}
             </Paper>
-        </div>
+        </Paper>
     );
 };
 

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import 'typeface-roboto';
 import Button from '@material-ui/core/Button';
+import AppBar from '@material-ui/core/AppBar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
 import Mixers from './components/mixers.js';
 import Inputs from './components/inputs.js';
 import Outputs from './components/outputs.js';
@@ -27,13 +30,28 @@ const App = () => {
             .catch(e => console.error(e));
     }, []);
 
+    const [value, setValue] = React.useState(0);
+
+    const handleChange = (event, newValue) => {
+        setValue(newValue);
+    };
+
     return (
         <Contexts>
-            {livePlayer && <LivePlayer player_id={livePlayer} />}
-            <Playlists />
-            <Mixers />
-            <Inputs />
-            <Outputs />
+            <AppBar position="static">
+                <Tabs value={value} onChange={handleChange}>
+                    <Tab label="Live player" />
+                    <Tab label="Playlists" />
+                    <Tab label="Mixers" />
+                    <Tab label="Inputs" />
+                    <Tab label="Outputs" />
+                </Tabs>
+            </AppBar>
+            {livePlayer && value == 0 && <LivePlayer player_id={livePlayer} />}
+            {value == 1 && <Playlists />}
+            {value == 2 && <Mixers />}
+            {value == 3 && <Inputs />}
+            {value == 4 && <Outputs />}
         </Contexts>
     );
 };

@@ -68,7 +68,7 @@ Then open the UI at <http://localhost:5000>
 Features that are missing are as follows:
 
 - Downloading playlist items from external sources (e.g. YouTube/Bandcamp)
-- A nice UI that isn't all on one page and the same for all users
+- Upload tracks
 - Add timings and jingles to the live playlist
 - A soundboard
 - Handle different sample rates
