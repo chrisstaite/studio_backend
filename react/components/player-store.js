@@ -26,9 +26,11 @@ const PlayerStore = ({children}) => {
 
     // Get the initial state by requesting it
     useEffect(() => {
-        fetchGet('/player')
+        const abortController = new AbortController();
+        fetchGet('/player', {signal: abortController.signal})
             .then(players => setPlayers(players))
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, []);
 
     return (

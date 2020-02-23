@@ -61,15 +61,15 @@ const App = () => {
                     <Tab label="Mixers" />
                     <Tab label="Inputs" />
                     <Tab label="Outputs" />
-                    <div className={classes.play_button}>
-                        {stream && <BrowserPlayer />}
-                        {!stream && <Tooltip title="Start a browser output">
-                            <Fab color="primary" size="small" onClick={e => setStream(true)}>
-                                <PlayIcon />
-                            </Fab>
-                        </Tooltip>}
-                    </div>
                 </Tabs>
+                <div className={classes.play_button}>
+                    {stream && <BrowserPlayer />}
+                    {!stream && <Tooltip title="Start a browser output">
+                        <Fab color="primary" size="small" onClick={e => setStream(true)}>
+                            <PlayIcon />
+                        </Fab>
+                    </Tooltip>}
+                </div>
             </AppBar>
             {livePlayer && value == 0 && <LivePlayer player_id={livePlayer} />}
             {value == 1 && <Playlists />}

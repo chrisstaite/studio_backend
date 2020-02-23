@@ -31,11 +31,13 @@ const LibraryRoots = ({ onClose, open }) => {
     const [ newRootOpen, setNewRootOpen ] = useState(false);
 
     useEffect(() => {
+        const abortController = new AbortController();
         if (open) {
-            fetchGet('/library')
+            fetchGet('/library', {signal: abortController.signal})
                 .then(response => setRoots(response))
                 .catch(e => console.error(e));
         }
+        return () => abortController.abort();
     }, [open]);
 
     const addRootDirectory = directory => {

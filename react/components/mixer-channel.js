@@ -52,7 +52,8 @@ const MixerChannel = ({mixer, channel, className}) => {
         ]
     });
     const setInput = input => {
-        fetchPut('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {'input': input});
+        fetchPut('/audio/mixer/' + mixer.id + '/channel/' + channel.id, {'input': input})
+            .catch(e => console.error(e));
     };
 
     return (

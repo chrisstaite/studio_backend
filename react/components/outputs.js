@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Output from './output.js';
 import { useOutputs } from './output-store.js';
 import NewOutputDialog from './new-output.js'

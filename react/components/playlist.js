@@ -116,17 +116,20 @@ const Playlist = forwardRef((props, ref) => {
     }));
 
     useEffect(() => {
-        fetchGet('/playlist')
+        const abortController = new AbortController();
+        fetchGet('/playlist', {signal: abortController.signal})
             .then(playlists => setPlaylists(playlists))
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, []);
 
     useEffect(() => {
+        const abortController = new AbortController();
         if (playlist == '') {
             setRows([]);
             setNextId(0);
         } else {
-            fetchGet('/playlist/' + playlist)
+            fetchGet('/playlist/' + playlist, {signal: abortController.signal})
                 .then(tracks => {
                     let id = 0;
                     setPlaylistLoading(true);
@@ -139,6 +142,7 @@ const Playlist = forwardRef((props, ref) => {
                 })
                 .catch(e => console.error(e));
         }
+        return () => abortController.abort();
     }, [playlist]);
 
     const handleClose = (playlist) => {

@@ -38,12 +38,14 @@ function NewInputDialog({ onClose, open }) {
 
     // Get the list of available devices
     useEffect(() => {
+        const abortController = new AbortController();
         if (open == true) {
-            fetchGet('/audio/input/devices')
+            fetchGet('/audio/input/devices', {signal: abortController.signal})
                 .then(devices => devices.filter(device => inputs.findIndex(item => item.name == device) == -1))
                 .then(devices => setDevices(devices))
                 .catch(e => console.error(e));
         }
+        return () => abortController.abort();
     }, [open]);
 
     return (

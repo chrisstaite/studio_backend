@@ -8,7 +8,7 @@ const useServerValue = (value, update, timeout=600) => {
     useDebouncedEffect(
         () => {
             if (serverValue != localValue) {
-                update(localValue);
+                return update(localValue);
             }
         },
         timeout,

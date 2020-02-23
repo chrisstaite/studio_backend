@@ -87,9 +87,11 @@ const PlaylistItem = React.forwardRef(
     const [ track, setTrack ] = useState(false);
 
     useEffect(() => {
-        fetchGet('/library/track/' + item.id + '/info')
+        const abortController = new AbortController();
+        fetchGet('/library/track/' + item.id + '/info', {signal: abortController.signal})
             .then(track => { setTrack(track); setLength(track.length); })
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, [item.id]);
 
     const toggleType = () => {
@@ -185,15 +187,17 @@ const SearchBox = ({ addTrack }) => {
     const [ loading, setLoading ] = useState(false);
 
     useEffect(() => {
+        const abortController = new AbortController();
         if (search == '') {
             setOptions([]);
             setLoading(false);
         } else {
             setLoading(true);
-            fetchGet(`/library/track?results=10&page=0&query=${search}`)
+            fetchGet(`/library/track?results=10&page=0&query=${search}`, {signal: abortController.signal})
                 .then(({count, tracks}) => { setOptions(tracks); setLoading(false); })
                 .catch(e => { console.error(e); setLoading(false); });
         }
+        return () => abortController.abort();
     }, [search]);
 
     const inputChange = (event, value, reason) => {
@@ -259,21 +263,23 @@ const LivePlayer = ({ player_id }) => {
     const [ trackLengths, setTrackLengths ] = useState([]);
 
     useEffect(() => {
-        fetchGet('/player/' + player_id)
+        const abortController = new AbortController();
+        fetchGet('/player/' + player_id, {signal: abortController.signal})
             .then(player => setName(player.name))
             .catch(e => console.error(e));
-        fetchGet('/player/' + player_id + '/jingle_count')
+        fetchGet('/player/' + player_id + '/jingle_count', {signal: abortController.signal})
             .then(count => setJingleCount(count))
             .catch(e => console.error(e));
-        fetchGet('/player/' + player_id + '/state')
+        fetchGet('/player/' + player_id + '/state', {signal: abortController.signal})
             .then(state => setState(state))
             .catch(e => console.error(e));
-        fetchGet('/player/' + player_id + '/tracks')
+        fetchGet('/player/' + player_id + '/tracks', {signal: abortController.signal})
             .then(tracks => setTracks(tracks))
             .catch(e => console.error(e));
-        fetchGet('/player/' + player_id + '/jingle_playlist')
+        fetchGet('/player/' + player_id + '/jingle_playlist', {signal: abortController.signal})
             .then(playlist => setJinglePlaylist(playlist))
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, [player_id]);
 
     const updatePlayer = ({id, name}) => {

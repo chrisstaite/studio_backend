@@ -59,9 +59,10 @@ const Directory = ({ path, expandedList, expanded, setDirectory, ...props }) => 
     const [ loaded, setLoaded ] = useState(false);
 
     useEffect(() => {
+        const abortController = new AbortController();
         if (!loaded && expanded)
         {
-            fetchGet('/browse' + path)
+            fetchGet('/browse' + path, {signal: abortController.signal})
                 .then(directories => {
                     if (Array.isArray(directories)) {
                         setListing(directories);
@@ -75,6 +76,7 @@ const Directory = ({ path, expandedList, expanded, setDirectory, ...props }) => 
                 .catch(e => console.error(e));
             setLoaded(true);
         }
+        return () => abortController.abort();
     }, [path, loaded, expanded]);
 
     if (!loaded && expanded) {

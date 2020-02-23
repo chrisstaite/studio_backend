@@ -22,7 +22,7 @@ const fetchPut = (url, data) => fetchWrap(url, data, 'PUT');
 const fetchPost = (url, data) => fetchWrap(url, data, 'POST');
 const fetchDelete = (url, data) => fetchWrap(url, data, 'DELETE');
 
-const fetchGet = (url) => fetch(url)
+const fetchGet = (url, init) => fetch(url, init)
     .then(handleErrors)
     .then(response => response.json());
 

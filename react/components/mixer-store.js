@@ -56,8 +56,8 @@ const MixerStore = ({children}) => {
         };
     }, [socket]);
 
-    const loadMixerChannels = mixers => {
-        mixers.forEach(mixer => fetchGet('/audio/mixer/' + mixer.id)
+    const loadMixerChannels = (mixers, signal) => {
+        mixers.forEach(mixer => fetchGet('/audio/mixer/' + mixer.id, {signal: signal})
             .then(data => setMixers(mixers => mixers.concat([data])))
             .catch(e => console.error(e))
         );
@@ -65,9 +65,11 @@ const MixerStore = ({children}) => {
 
     // Get the initial state by requesting it
     useEffect(() => {
-        fetchGet('/audio/mixer')
-            .then(mixers => loadMixerChannels(mixers))
+        const abortController = new AbortController();
+        fetchGet('/audio/mixer', {signal: abortController.signal})
+            .then(mixers => loadMixerChannels(mixers, abortController.signal))
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, []);
 
     return (

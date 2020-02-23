@@ -26,9 +26,11 @@ const OutputStore = ({children}) => {
 
     // Get the initial state by requesting it
     useEffect(() => {
-        fetchGet('/audio/output')
+        const abortController = new AbortController();
+        fetchGet('/audio/output', {signal: abortController.signal})
             .then(outputs => setOutputs(outputs))
             .catch(e => console.error(e));
+        return () => abortController.abort();
     }, []);
 
     return (

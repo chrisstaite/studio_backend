@@ -176,13 +176,15 @@ function NewOutputDialog({ onClose, open }) {
 
     // Get the list of available devices
     useEffect(() => {
+        const abortController = new AbortController();
         if (open == true) {
-            fetchGet('/audio/output/devices')
+            fetchGet('/audio/output/devices', {signal: abortController.signal})
                 .then(devices => devices.filter(
                     device => outputs.findIndex(item => item.type == 'device' && item.name == device) == -1))
                 .then(devices => setDevices(devices))
                 .catch(e => console.error(e));
         }
+        return () => abortController.abort();
     }, [open]);
 
     const handleChange = panel => (event, isExpanded) => {

@@ -54,7 +54,7 @@ const Mixer = ({mixer}) => {
             }
         ]
     });
-    const addChannel = () => fetchPost('/audio/mixer/' + mixer.id + '/channel');
+    const addChannel = () => fetchPost('/audio/mixer/' + mixer.id + '/channel').catch(e => console.error(e));
 
     return (
         <Card className={classes.card}>

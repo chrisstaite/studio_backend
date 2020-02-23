@@ -22,7 +22,8 @@ const playWebAudio = uri => {
             .catch(e => console.error(e));
     };
 
-    fetch(uri)
+    const abortController = new AbortController();
+    fetch(uri, {signal: abortController.signal})
         .then(response => {
             if (!response.ok) {
                 throw response;
@@ -32,6 +33,7 @@ const playWebAudio = uri => {
         .then(response => response.body.getReader())
         .then(recursiveRead)
         .catch(e => console.info(e));
+    return () => abortController.abort();
 };
 
 const BrowserPlayer = () => {
