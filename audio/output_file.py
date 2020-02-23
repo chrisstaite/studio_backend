@@ -71,6 +71,7 @@ class RollingFile(object):
         self._output.remove_callback(self._write_file)
         if self._source is not None:
             self._output.input = None
+            self._output.close()
         if self._current_file is not None:
             self._current_file.close()
 
@@ -96,6 +97,9 @@ class RollingFile(object):
         if self._current_file is None:
             self._open_file()
         elif datetime.datetime.now() - self._start_time > datetime.timedelta(seconds=self.ROLL_TIME_SECONDS):
+            self._output.input = None
+            self._output.close()
             self._current_file.close()
             self._open_file()
+            self._output.input = self._source
         self._current_file.write(blocks)

@@ -19,6 +19,17 @@ class Mp3(callback.Callback):
         self._input = None
         self._quality = quality
         self._bit_rate = bit_rate
+        self._channels = None
+
+    def close(self):
+        """
+        Flush any output
+        """
+        encoder = self._encoder
+        self._channels = None
+        self._encoder = None
+        if encoder is not None:
+            self.notify_callbacks(encoder.flush())
 
     @property
     def input(self):
@@ -35,18 +46,20 @@ class Mp3(callback.Callback):
         if self._input is not None:
             self._input.remove_callback(self._input_callback)
         if self._encoder is not None:
-            self.notify_callbacks(self._encoder.flush())
-            self._encoder = None
+            if source is not None and source.channels != self._channels:
+                self.notify_callbacks(self._encoder.flush())
         self._input = None
         if source is not None:
-            try:
-                self._encoder = lameenc.Encoder()
-                self._encoder.set_channels(source.channels)
-                self._encoder.set_quality(self._quality)
-                self._encoder.set_bit_rate(self._bit_rate)
-            except:
-                self._encoder = None
-                raise
+            if self._encoder is None or source.channels != self._channels:
+                try:
+                    self._encoder = lameenc.Encoder()
+                    self._encoder.set_channels(source.channels)
+                    self._encoder.set_quality(self._quality)
+                    self._encoder.set_bit_rate(self._bit_rate)
+                    self._channels = source.channels
+                except:
+                    self._encoder = None
+                    raise
             self._input = source
             self._input.add_callback(self._input_callback)
 

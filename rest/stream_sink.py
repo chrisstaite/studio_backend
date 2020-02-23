@@ -1,8 +1,8 @@
+import eventlet.event
 import typing
 import flask
 import flask_restful
 import audio
-import queue
 import audio_manager
 
 
@@ -19,7 +19,8 @@ class Mp3Generator(object):
         # Low quality, 64kbit MP3 output for speed
         self._output = audio.mp3.Mp3(7, 64)
         self._output.add_callback(self._enqueue)
-        self._queue = queue.Queue(maxsize=512)
+        self._buffer_set = eventlet.event.Event()
+        self._buffer = []
         output = audio_manager.output.Outputs.add_output(name, self._output)
         outputs = [{
             'id': output.id,
@@ -47,11 +48,12 @@ class Mp3Generator(object):
         The handler for the output of the MP3
         :param blocks:  The data produced (the MP3)
         """
+        self._buffer.append(blocks)
         try:
-            self._queue.put_nowait(blocks)
-        except queue.Full:
-            self._queue.get_nowait()
-            self._queue.put_nowait(blocks)
+            self._buffer_set.send(True)
+        except AssertionError:
+            # Don't care, so long as it's notified already
+            pass
 
     def close(self):
         """
@@ -72,10 +74,14 @@ class Mp3Generator(object):
         :return:  A generator of the MP3 blocks
         """
         while True:
-            try:
-                yield self._queue.get(timeout=5)
-            except queue.Empty:
-                # Send an empty block to check the connection
+            if self._buffer_set.wait(1.0):
+                buffer = self._buffer
+                self._buffer = []
+                self._buffer_set.reset()
+                buffer = b''.join(buffer)
+                yield buffer
+            else:
+                # On timeout, check socket is still alive
                 yield b''
 
 

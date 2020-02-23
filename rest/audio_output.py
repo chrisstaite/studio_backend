@@ -235,7 +235,7 @@ class Output(flask_restful.Resource):
         if args['input'] is not None:
             try:
                 output.input = args['input']
-                socketio.emit('output_update', {'id': output.id, 'input': args['input']})
+                socketio.emit('output_update', {'id': output.id, 'input_id': args['input']})
             except ValueError:
                 flask_restful.abort(400, message='Input with the given ID does not exist')
             except audio_manager.exception.InUseException:

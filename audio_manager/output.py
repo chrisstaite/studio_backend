@@ -159,8 +159,10 @@ class Output(object):
         self._output.input = input.get_input(input_id)
         session = persist.Session()
         entity = session.query(persist.Output).get(self._id)
-        entity.input = input_id
-        session.commit()
+        if entity is not None:
+            # Not all outputs are persisted (e.g. Stream)
+            entity.input = input_id
+            session.commit()
         session.close()
 
 
