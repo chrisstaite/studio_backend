@@ -27,7 +27,8 @@ class OutputDevice(callback.Callback):
             channels=self._channels,
             device=name,
             callback=self._output_callback,
-            dtype=numpy.int16
+            dtype=numpy.int16,
+            latency=device_details['default_low_output_latency']
         )
         self._block_size = self._channels * block_size
         self._input = None

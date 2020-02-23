@@ -27,7 +27,8 @@ class InputDevice(callback.Callback):
             channels=self._channels,
             device=name,
             callback=self._callback,
-            dtype=numpy.int16
+            dtype=numpy.int16,
+            latency=device_details['default_low_input_latency']
         )
         self._last_frames = None
         self._last_time = None

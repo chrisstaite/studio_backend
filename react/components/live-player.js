@@ -38,7 +38,10 @@ const useStyles = makeStyles({
     },
     track_button: {
         float: 'right',
-    }
+    },
+    play_button: {
+        float: 'right',
+    },
 });
 
 const PlaylistHeader = () => (
@@ -393,13 +396,19 @@ const LivePlayer = ({ player_id }) => {
                 <PlaylistBox addPlaylist={addPlaylist} />
                 {state == 'paused' &&
                     <Tooltip title="Play">
-                        <Fab color="primary" size="small" onClick={() => putState('playing')}>
+                        <Fab color="primary"
+                             size="small"
+                             onClick={() => putState('playing')}
+                             className={classes.play_button}>
                             <PlayIcon />
                         </Fab>
                     </Tooltip>}
                 {state == 'playing' &&
                     <Tooltip title="Pause">
-                        <Fab color="primary" size="small" onClick={() => putState('paused')}>
+                        <Fab color="primary"
+                             size="small"
+                             onClick={() => putState('paused')}
+                             className={classes.play_button}>
                             <PauseIcon />
                         </Fab>
                     </Tooltip>}
