@@ -29,8 +29,18 @@ class Server(object):
         self._angular = None
         self._react = None
         with self._app.app_context():
+            self._setup_db()
             self._setup_rest()
             self._setup_angular()
+
+    def _setup_db(self):
+        """
+        Configure the SQLAlchemy databases for use with Flask
+        """
+        import library
+        library.database.init_app(self._app)
+        with self._app.app_context():
+            library.Library.restore()
 
     def _setup_rest(self) -> None:
         """

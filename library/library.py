@@ -51,12 +51,11 @@ class Library(object):
         Add a directory to the library
         :param directory:  The location of the directory to add
         """
-        session = database.Session()
+        session = database.db.session
         if session.query(database.Library.id).filter(database.Library.location.startswith(directory)).count() == 0:
             cls._directory_handlers.append(DirectoryScanner(directory))
             session.add(database.Library(location=directory))
             session.commit()
-        session.close()
 
     @classmethod
     def remove_directory(cls, directory: str):
@@ -70,7 +69,7 @@ class Library(object):
             return
         handler.close()
         cls._directory_handlers.remove(handler)
-        session = database.Session()
+        session = database.db.session
         session.query(database.Library).filter_by(location=directory).delete()
         session.query(database.Track).filter(database.Track.location.startswith(directory)).\
             delete(synchronize_session='fetch')
@@ -91,10 +90,7 @@ class Library(object):
         """
         Load the library from the database
         """
-        session = database.Session()
+        session = database.db.session
         for directory in session.query(database.Library).all():
             cls._directory_handlers.append(DirectoryScanner(directory.location))
         session.close()
-
-
-Library.restore()

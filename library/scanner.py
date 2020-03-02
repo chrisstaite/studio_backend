@@ -37,7 +37,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         Called when a file or a directory is moved or renamed
         :param event:  Event representing file/directory movement
         """
-        session = database.Session()
+        session = database.db.session
         if isinstance(event, watchdog.events.FileMovedEvent):
             track = session.query(database.Track).filter_by(filename=event.src_path).one_or_none()
             if track is not None:
@@ -62,7 +62,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         Called when a file or directory is deleted
         :param event:  Event representing file/directory deletion
         """
-        session = database.Session()
+        session = database.db.session
         if isinstance(event, watchdog.events.FileDeletedEvent):
             session.query(database.Track).filter_by(location=event.src_path).delete()
         elif isinstance(event, watchdog.events.DirDeletedEvent):
@@ -85,7 +85,7 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
         Add a new file to the database if it doesn't already exist and it is an audio file
         :param filename:  The path of the file to add
         """
-        session = database.Session()
+        session = database.db.session
         file = session.query(database.Track).filter_by(location=filename).one_or_none()
         if file is not None:
             session.close()
@@ -111,4 +111,8 @@ class DirectoryScanner(watchdog.events.FileSystemEventHandler):
 
 
 if __name__ == "__main__":
-    DirectoryScanner(sys.argv[1]).start()
+    import flask
+    app = flask.Flask(__name__)
+    database.init_app(app)
+    with app.app_context():
+        DirectoryScanner(sys.argv[1]).start()

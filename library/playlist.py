@@ -6,7 +6,7 @@ class Playlist(object):
 
     @staticmethod
     def list() -> typing.Iterable['Playlist']:
-        session = database.Session()
+        session = database.db.session
         try:
             for playlist in session.query(database.Playlist):
                 yield playlist
@@ -15,14 +15,14 @@ class Playlist(object):
 
     @classmethod
     def create(cls, name: str) -> int:
-        session = database.Session()
+        session = database.db.session
         playlist = database.Playlist(name=name)
         session.add(playlist)
         session.commit()
         return playlist.id
 
     def __init__(self, id: int):
-        self._session = database.Session()
+        self._session = database.db.session
         self._playlist = self._session.query(database.Playlist).get(id)
 
     @property

@@ -1,75 +1,78 @@
 import enum
 import os.path
 import datetime
-import sqlalchemy.ext.declarative
-import sqlalchemy.orm
-
-# The base type for all of the tables
-Base = sqlalchemy.ext.declarative.declarative_base()
+import flask_sqlalchemy
 
 
-class Track(Base):
+db = flask_sqlalchemy.SQLAlchemy()
+
+
+class Track(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'track'
 
     # The ID of the track
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # The location of the file
-    location = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    location = db.Column(db.String, nullable=False)
     # The artist of the track
-    artist = sqlalchemy.Column(sqlalchemy.String)
+    artist = db.Column(db.String)
     # The title of the track
-    title = sqlalchemy.Column(sqlalchemy.String)
+    title = db.Column(db.String)
     # The length of the track in seconds
-    length = sqlalchemy.Column(sqlalchemy.Float)
+    length = db.Column(db.Float)
 
 
-class TrackPlay(Base):
+class TrackPlay(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'track_play'
 
     # The ID of the track
-    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), primary_key=True)
+    track = db.Column(db.Integer, db.ForeignKey('track.id'), primary_key=True)
     # The time and date it was played
-    time = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
+    time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
 
-class TrackTags(Base):
+class TrackTags(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'track_tags'
 
     # The ID of the track
-    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), primary_key=True)
+    track = db.Column(db.Integer, db.ForeignKey('track.id'), primary_key=True)
     # The tag to assign to the track
-    tag = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    tag = db.Column(db.String, primary_key=True)
 
 
-class Library(Base):
+class Library(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'library'
 
     # The ID of this base directory
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # A base directory for the library
-    location = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    location = db.Column(db.String, nullable=False)
 
 
-class Playlist(Base):
+class Playlist(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'playlist'
 
     # The ID of the playlist
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # The name of the playlist
-    name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
 
 
-class PlaylistTrack(Base):
+class PlaylistTrack(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'playlist_track'
 
     # The playlist that this track is in
-    playlist = sqlalchemy.Column(
-        sqlalchemy.Integer, sqlalchemy.ForeignKey('playlist.id'), nullable=False, primary_key=True
-    )
+    playlist = db.Column(db.Integer, db.ForeignKey('playlist.id'), nullable=False, primary_key=True)
     # The track entry for the playlist
-    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), nullable=False)
+    track = db.Column(db.Integer, db.ForeignKey('track.id'), nullable=False)
     # The index in the playlist of the track to change the order
-    index = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, primary_key=True)
+    index = db.Column(db.Integer, nullable=False, primary_key=True)
 
 
 class LivePlayerState(enum.Enum):
@@ -79,21 +82,22 @@ class LivePlayerState(enum.Enum):
     paused = 1
 
 
-class LivePlayer(Base):
+class LivePlayer(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'live_player'
 
     # The ID of the playlist
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # The name of the playlist
-    name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
     # The state of the playlist
-    state = sqlalchemy.Column(sqlalchemy.Enum(LivePlayerState), nullable=False)
+    state = db.Column(db.Enum(LivePlayerState), nullable=False)
     # The playlist that contains the jingles
-    jingle_playlist = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('playlist.id'), nullable=True)
+    jingle_playlist = db.Column(db.Integer, db.ForeignKey('playlist.id'), nullable=True)
     # The number of tracks to play before playing a jingle
-    jingle_count = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
+    jingle_count = db.Column(db.Integer, nullable=True)
     # The number of tracks played since the last jingle
-    jingle_plays = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
+    jingle_plays = db.Column(db.Integer, nullable=False)
 
 
 class LivePlayerType(enum.Enum):
@@ -105,21 +109,28 @@ class LivePlayerType(enum.Enum):
     loop = 2
 
 
-class LivePlayerTrack(Base):
+class LivePlayerTrack(db.Model):
+    __bind_key__ = 'library'
     __tablename__ = 'live_player_track'
 
     # The playlist that this track is in
-    playlist = sqlalchemy.Column(
-        sqlalchemy.Integer, sqlalchemy.ForeignKey('live_player.id'), nullable=False, primary_key=True
-    )
+    playlist = db.Column(db.Integer, db.ForeignKey('live_player.id'), nullable=False, primary_key=True)
     # The track entry for the playlist
-    track = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('track.id'), nullable=False)
+    track = db.Column(db.Integer, db.ForeignKey('track.id'), nullable=False)
     # The index in the playlist of the track to change the order
-    index = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, primary_key=True)
+    index = db.Column(db.Integer, nullable=False, primary_key=True)
     # The type of the entry
-    type = sqlalchemy.Column(sqlalchemy.Enum(LivePlayerType), nullable=False)
+    type = db.Column(db.Enum(LivePlayerType), nullable=False)
 
 
-engine = sqlalchemy.create_engine('sqlite:///' + os.path.join(os.path.dirname(__file__), 'library.db'))
-Base.metadata.create_all(engine)
-Session = sqlalchemy.orm.sessionmaker(bind=engine)
+def init_app(app):
+    """
+    Configure the database for the given Flask application
+    :param app:  The Flask application to configure for
+    """
+    binds = app.config.get('SQLALCHEMY_BINDS', {})
+    binds['library'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'library.db')
+    app.config['SQLALCHEMY_BINDS'] = binds
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    db.create_all(bind='library', app=app)

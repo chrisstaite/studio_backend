@@ -14,7 +14,7 @@ class LivePlayer(object):
 
     @staticmethod
     def list() -> typing.Iterable['LivePlayer']:
-        session = database.Session()
+        session = database.db.session
         try:
             for playlist in session.query(database.LivePlayer):
                 yield LivePlayer(playlist.id)
@@ -23,7 +23,7 @@ class LivePlayer(object):
 
     @classmethod
     def create(cls, name: str) -> int:
-        session = database.Session()
+        session = database.db.session
         playlist = database.LivePlayer(name=name, state=database.LivePlayerState.paused, jingle_plays=0)
         session.add(playlist)
         session.commit()
@@ -47,7 +47,8 @@ class LivePlayer(object):
         Create an instance of the live player represented by the given ID
         :param id:  The ID of this player
         """
-        self._session = database.Session()
+        # TODO: Perhaps storing the session in the instance is a bad idea here...
+        self._session = database.db.session
         self._playlist = self._session.query(database.LivePlayer).get(id)
 
     @property

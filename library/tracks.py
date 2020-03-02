@@ -13,7 +13,7 @@ class Track(object):
         Open a track or editing
         :param id:  The ID of the track
         """
-        session = database.Session()
+        session = database.db.session
         self.__dict__['_session'] = session
         self.__dict__['_track'] = session.query(database.Track).get(id)
 
@@ -47,7 +47,7 @@ class Tracks(object):
         :param results:  The number of results per page
         :param query:  The thing to search for
         """
-        self._session = database.Session()
+        self._session = database.db.session
         self._query = self._session.query(database.Track)
         if query is not None:
             self._query = self._query.filter(sqlalchemy.or_(
