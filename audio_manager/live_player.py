@@ -18,6 +18,7 @@ class LivePlayer(object):
             self._playlist.pause()
         else:
             self._start_thread()
+        self._app = flask.current_app._get_current_object()
         current = self._player.current_track()
         if current is not None:
             self._playlist.set_file(library.tracks.Track(current[0]).location)
@@ -40,15 +41,16 @@ class LivePlayer(object):
 
     def _track_finished(self):
         # TODO: Handle jingle playing
-        current = self._player.current_track()
-        if current[1] == library.database.LivePlayerType.loop:
-            self._playlist.set_file(library.tracks.Track(current[0]).location)
-        elif current[1] == library.database.LivePlayerType.play_next:
-            self._play_next()
-        else:
-            self._playlist.pause()
-            self._player.state = library.database.LivePlayerState.paused
-            self._play_next()
+        with self._app.app_context():
+            current = self._player.current_track()
+            if current[1] == library.database.LivePlayerType.loop:
+                self._playlist.set_file(library.tracks.Track(current[0]).location)
+            elif current[1] == library.database.LivePlayerType.play_next:
+                self._play_next()
+            else:
+                self._playlist.pause()
+                self._player.state = library.database.LivePlayerState.paused
+                self._play_next()
 
     def _play_next(self):
         self._player.remove_track()

@@ -44,6 +44,8 @@ const useStyles = makeStyles({
     },
 });
 
+const TrackCache = {};
+
 const PlaylistHeader = () => (
     <TableRow>
         <TableCell>
@@ -87,11 +89,27 @@ const PlaylistItem = React.forwardRef(
     const [ track, setTrack ] = useState(false);
 
     useEffect(() => {
-        const abortController = new AbortController();
-        fetchGet('/library/track/' + item.id + '/info', {signal: abortController.signal})
-            .then(track => { setTrack(track); setLength(track.length); })
-            .catch(e => console.error(e));
-        return () => abortController.abort();
+        const resolved = track => {
+            setTrack(track);
+            setLength(track.length);
+        };
+
+        if (item.id in TrackCache) {
+            const cacheValue = TrackCache[item.id];
+            if (cacheValue instanceof Promise) {
+                cacheValue.then(track => { resolved(track); return track; });
+            } else {
+                resolved(cacheValue);
+            }
+        } else {
+            const abortController = new AbortController();
+            const promise = fetchGet('/library/track/' + item.id + '/info', {signal: abortController.signal})
+                .then(track => { TrackCache[item.id] = track; return track; })
+                .then(track => { resolved(track); return track; })
+                .catch(e => console.error(e));
+            TrackCache[item.id] = promise
+            return () => abortController.abort();
+        }
     }, [item.id]);
 
     const toggleType = () => {

@@ -1,27 +1,27 @@
-import sqlalchemy.ext.declarative
-import sqlalchemy.orm
+import flask_sqlalchemy
 import os.path
 import enum
 
-# The base type for all of the tables
-Base = sqlalchemy.ext.declarative.declarative_base()
+
+db = flask_sqlalchemy.SQLAlchemy()
 
 
 class InputTypes(enum.Enum):
     device = 0
 
 
-class Input(Base):
+class Input(db.Model):
+    __bind_key__ = 'audio_manager'
     __tablename__ = 'input'
 
     # The UUID of the Input
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True, nullable=False)
+    id = db.Column(db.String, primary_key=True, nullable=False)
     # The name of the Input
-    display_name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    display_name = db.Column(db.String, nullable=False)
     # The type of the input
-    type = sqlalchemy.Column(sqlalchemy.Enum(InputTypes), nullable=False)
+    type = db.Column(db.Enum(InputTypes), nullable=False)
     # The parameters to construct that type
-    parameters = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    parameters = db.Column(db.String, nullable=False)
 
 
 class OutputTypes(enum.Enum):
@@ -31,45 +31,56 @@ class OutputTypes(enum.Enum):
     file = 3
 
 
-class Output(Base):
+class Output(db.Model):
+    __bind_key__ = 'audio_manager'
     __tablename__ = 'output'
 
     # The UUID of the Output
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True, nullable=False)
+    id = db.Column(db.String, primary_key=True, nullable=False)
     # The name of the Output
-    display_name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    display_name = db.Column(db.String, nullable=False)
     # The UUID of the source of this channel
-    input = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    input = db.Column(db.String, nullable=True)
     # The type of the output
-    type = sqlalchemy.Column(sqlalchemy.Enum(OutputTypes), nullable=False)
+    type = db.Column(db.Enum(OutputTypes), nullable=False)
     # The parameters to construct that type
-    parameters = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    parameters = db.Column(db.String, nullable=False)
 
 
-class Mixer(Base):
+class Mixer(db.Model):
+    __bind_key__ = 'audio_manager'
     __tablename__ = 'mixer'
 
     # The UUID of the mixer
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True, nullable=False)
+    id = db.Column(db.String, primary_key=True, nullable=False)
     # The name of the mixer
-    display_name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    display_name = db.Column(db.String, nullable=False)
     # The number of output channels
-    output_channels = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
+    output_channels = db.Column(db.Integer, nullable=False)
 
 
-class MixerChannel(Base):
+class MixerChannel(db.Model):
+    __bind_key__ = 'audio_manager'
     __tablename__ = 'mixer_channel'
 
     # The UUID of the mixer channel
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True, nullable=False)
+    id = db.Column(db.String, primary_key=True, nullable=False)
     # The UUID of the mixer this channel is for
-    mixer = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    mixer = db.Column(db.String, nullable=False)
     # The UUID of the source of this channel
-    input = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    input = db.Column(db.String, nullable=False)
     # The volume of this channel
-    volume = sqlalchemy.Column(sqlalchemy.Float, nullable=False)
+    volume = db.Column(db.Float, nullable=False)
 
 
-engine = sqlalchemy.create_engine('sqlite:///' + os.path.join(os.path.dirname(__file__), 'state.db'))
-Base.metadata.create_all(engine)
-Session = sqlalchemy.orm.sessionmaker(bind=engine)
+def init_app(app):
+    """
+    Configure the database for the given Flask application
+    :param app:  The Flask application to configure for
+    """
+    binds = app.config.get('SQLALCHEMY_BINDS', {})
+    binds['audio_manager'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'state.db')
+    app.config['SQLALCHEMY_BINDS'] = binds
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    db.create_all(bind='audio_manager', app=app)

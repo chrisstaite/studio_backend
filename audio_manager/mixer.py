@@ -47,11 +47,10 @@ class Channel(object):
             self._source = source
             self._mixer.set_volume(source, self._volume)
         from . import input
-        session = persist.Session()
+        session = persist.db.session
         channel = session.query(persist.MixerChannel).filter_by(id=self._channel_id).one()
         channel.input = input.get_input_id(source)
         session.commit()
-        session.close()
 
     @property
     def volume(self) -> float:
@@ -72,11 +71,10 @@ class Channel(object):
         if self._source is not None:
             self._mixer.set_volume(self._source, volume)
         self._volume = volume
-        session = persist.Session()
+        session = persist.db.session
         channel = session.query(persist.MixerChannel).filter_by(id=self._channel_id).one()
         channel.volume = volume
         session.commit()
-        session.close()
 
 
 class ChannelMixer(object):
@@ -138,10 +136,9 @@ class ChannelMixer(object):
         id_ = str(uuid.uuid4())
         new_channel = Channel(id_, self._mixer)
         self._channels[id_] = new_channel
-        session = persist.Session()
+        session = persist.db.session
         session.add(persist.MixerChannel(id=id_, mixer=self._mixer_id, input='', volume=1.0))
         session.commit()
-        session.close()
         return id_
 
     def remove_channel(self, channel_id: str) -> None:
@@ -152,10 +149,9 @@ class ChannelMixer(object):
         """
         self._channels[channel_id].input = None
         del self._channels[channel_id]
-        session = persist.Session()
+        session = persist.db.session
         session.query(persist.MixerChannel).filter_by(id=channel_id).delete()
         session.commit()
-        session.close()
 
     def has_callbacks(self) -> bool:
         """
@@ -215,11 +211,10 @@ class Mixer(object):
     @display_name.setter
     def display_name(self, display_name):
         self._display_name = display_name
-        session = persist.Session()
+        session = persist.db.session
         entity = session.query(persist.Mixer).get(self._id)
         entity.display_name = display_name
         session.commit()
-        session.close()
 
 
 class Mixers(object):
@@ -245,11 +240,10 @@ class Mixers(object):
         mixer = ChannelMixer(id_, channels)
         mixer = Mixer(id_, display_name, mixer)
         cls._mixers.append(mixer)
-        session = persist.Session()
+        session = persist.db.session
         sql_mixer = persist.Mixer(id=mixer.id, display_name=display_name, output_channels=channels)
         session.add(sql_mixer)
         session.commit()
-        session.close()
         return mixer
 
     @classmethod
@@ -278,22 +272,20 @@ class Mixers(object):
         for channel_id in mixer.mixer.get_channel_ids():
             mixer.mixer.get_channel(channel_id).input = None
         cls._mixers.remove(mixer)
-        session = persist.Session()
+        session = persist.db.session
         session.query(persist.Mixer).filter_by(id=mixer.id).delete()
         session.query(persist.MixerChannel).filter_by(mixer=mixer.id).delete()
         session.commit()
-        session.close()
 
     @classmethod
     def restore(cls):
         """
         Restore the mixers in the persistence database
         """
-        session = persist.Session()
+        session = persist.db.session
         for sql_mixer in session.query(persist.Mixer).all():
             mixer = ChannelMixer(sql_mixer.id, sql_mixer.output_channels)
             mixer = Mixer(sql_mixer.id, sql_mixer.display_name, mixer)
             cls._mixers.append(mixer)
         for mixer in cls._mixers:
             mixer.mixer.restore(session.query(persist.MixerChannel).filter_by(mixer=mixer.id))
-        session.close()

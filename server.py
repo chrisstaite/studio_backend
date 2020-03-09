@@ -38,8 +38,10 @@ class Server(object):
         Configure the SQLAlchemy databases for use with Flask
         """
         import library
-        library.database.init_app(self._app)
+        import audio_manager
         with self._app.app_context():
+            library.database.init_app(self._app)
+            audio_manager.init_app(self._app)
             library.Library.restore()
 
     def _setup_rest(self) -> None:

@@ -128,11 +128,10 @@ class Output(object):
         :param display_name:  The display name to set
         """
         self._display_name = display_name
-        session = persist.Session()
+        session = persist.db.session
         entity = session.query(persist.Output).get(self._id)
         entity.display_name = display_name
         session.commit()
-        session.close()
 
     @property
     def input(self):
@@ -157,13 +156,12 @@ class Output(object):
             input_id = ''
         from . import input
         self._output.input = input.get_input(input_id)
-        session = persist.Session()
+        session = persist.db.session
         entity = session.query(persist.Output).get(self._id)
         if entity is not None:
             # Not all outputs are persisted (e.g. Stream)
             entity.input = input_id
             session.commit()
-        session.close()
 
 
 class Outputs(object):
@@ -214,7 +212,7 @@ class Outputs(object):
             type_ = persist.OutputTypes.file
             parameters = output.output.base_path
         if type_ is not None:
-            session = persist.Session()
+            session = persist.db.session
             session.add(persist.Output(
                 id=output.id,
                 display_name=display_name,
@@ -223,7 +221,6 @@ class Outputs(object):
                 parameters=parameters
             ))
             session.commit()
-            session.close()
         return output
 
     @classmethod
@@ -298,10 +295,9 @@ class Outputs(object):
         if output.output.input is not None:
             raise exception.InUseException('Output in use')
         cls._outputs.remove(output)
-        session = persist.Session()
+        session = persist.db.session
         session.query(persist.Output).filter_by(id=output.id).delete()
         session.commit()
-        session.close()
         # If all the multiplexers are removed, then remove the multiplex device
         if isinstance(output.output, MultiplexedOutput):
             if not any(x.output.parent == output.output.parent
@@ -313,7 +309,7 @@ class Outputs(object):
         """
         Restore the outputs from the database
         """
-        session = persist.Session()
+        session = persist.db.session
         for sql_input in session.query(persist.Output).filter_by(type=persist.OutputTypes.device).all():
             output_object = audio.output_device.OutputDevice(sql_input.parameters, settings.BLOCK_SIZE)
             output = Output(sql_input.id, sql_input.display_name, output_object)
@@ -341,7 +337,6 @@ class Outputs(object):
             output_object = audio.output_file.RollingFile(sql_input.parameters)
             output = Output(sql_input.id, sql_input.display_name, output_object)
             cls._outputs.append(output)
-        session.close()
 
     @classmethod
     def restore_inputs(cls):
@@ -350,7 +345,6 @@ class Outputs(object):
         For some reason, this has to be done in two stages because if this is imported after Mixer then we
         get an assertion in the PyAudio core.
         """
-        session = persist.Session()
+        session = persist.db.session
         for output in cls._outputs:
             output.input = session.query(persist.Output).get(output.id).input
-        session.close()

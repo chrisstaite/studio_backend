@@ -41,9 +41,7 @@ class Playlist(callback.Callback):
         :param filename:  The file to set as playing
         """
         if self._file is not None:
-            paused = self._paused
             self.stop()
-            self._paused = paused
         self._file = file.File(filename, self._blocks)
         self._file.add_callback(self._forward)
         self._file.set_end_callback(self._next_file)
@@ -76,9 +74,8 @@ class Playlist(callback.Callback):
         """
         Play the playlist
         """
-        if self._paused and self._file is not None:
-            self._file.play()
-        elif self._file is not None:
+        self._paused = False
+        if self._file is not None:
             self._file.set_end_callback(self._next_file)
             self._file.play()
 
@@ -95,7 +92,6 @@ class Playlist(callback.Callback):
         """
         Stop playing
         """
-        self._paused = True
         if self._file is not None:
             self._file.set_end_callback(None)
             self._file.stop()
