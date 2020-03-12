@@ -17,13 +17,34 @@ class Track(object):
         self.__dict__['_session'] = session
         self.__dict__['_track'] = session.query(database.Track).get(id)
 
+    def record_play(self):
+        """
+        Record a track being played
+        """
+        session = database.db.session
+        session.add(database.TrackPlay(track=self._track.id))
+        session.commit()
+
+    def last_play(self):
+        """
+        Get the last time this track was played
+        :return:  The last time the track was played
+        """
+        session = self._session
+        last_play = session.query(database.TrackPlay). \
+            filter(database.TrackPlay.track == self._track.id). \
+            order_by(database.TrackPlay.time). \
+            first()
+        return None if last_play is None else last_play.time
+
     def __getattr__(self, item):
         """
         Get an attribute from the underlying object
         :param item:  The name of the attribute to get
         :return:  The underlying attribute
         """
-        return getattr(self.__dict__['_track'], item)
+        local_value = getattr(self.__dict__, item, None)
+        return local_value if local_value is not None else getattr(self.__dict__['_track'], item)
 
     def __setattr__(self, key, value):
         """

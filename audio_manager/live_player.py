@@ -21,7 +21,7 @@ class LivePlayer(object):
         self._app = flask.current_app._get_current_object()
         current = self._player.current_track()
         if current is not None:
-            self._playlist.set_file(library.tracks.Track(current[0]).location)
+            self._play_track(current[0])
 
     def _start_thread(self):
         self._update_event = threading.Event()
@@ -44,7 +44,7 @@ class LivePlayer(object):
         with self._app.app_context():
             current = self._player.current_track()
             if current[1] == library.database.LivePlayerType.loop:
-                self._playlist.set_file(library.tracks.Track(current[0]).location)
+                self._play_track(current[0])
             elif current[1] == library.database.LivePlayerType.play_next:
                 self._play_next()
             else:
@@ -56,7 +56,7 @@ class LivePlayer(object):
         self._player.remove_track()
         current = self._player.current_track()
         if current is not None:
-            self._playlist.set_file(library.tracks.Track(current[0]).location)
+            self._play_track(current[0])
 
     def set_state(self, state: library.database.LivePlayerState):
         if state == library.database.LivePlayerState.playing:
@@ -68,9 +68,14 @@ class LivePlayer(object):
                 self._stop_thread()
             self._playlist.pause()
 
+    def _play_track(self, track_id: int):
+        track = library.tracks.Track(track_id)
+        track.record_play()
+        self._playlist.set_file(track.location)
+
     def set_track(self, track_id: int):
         self._playlist.set_next_callback(None)
-        self._playlist.set_file(library.tracks.Track(track_id).location)
+        self._play_track(track_id)
         self._playlist.set_next_callback(self._track_finished)
 
     @property
@@ -133,6 +138,6 @@ class LivePlayers(object):
         :raises ValueError:  The player is not found
         """
         try:
-            return next(x for x in cls._players if x.playlist is player or str(x.id) == str(player))
+            return next(x for x in cls._players if x.playlist is player or str(x.id) == player)
         except StopIteration:
             raise ValueError('No such player found')

@@ -47,82 +47,96 @@ class LivePlayer(object):
         Create an instance of the live player represented by the given ID
         :param id:  The ID of this player
         """
-        # TODO: Perhaps storing the session in the instance is a bad idea here...
-        self._session = database.db.session
-        self._playlist = self._session.query(database.LivePlayer).get(id)
+        self._playlist_id = id
 
     @property
     def name(self) -> str:
-        return self._playlist.name
+        return database.db.session.query(database.LivePlayer).get(self._playlist_id).name
 
     @name.setter
     def name(self, name: str):
-        self._playlist.name = name
-        self._session.commit()
+        session = database.db.session
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            update({database.LivePlayer.name: name})
+        session.commit()
 
     @property
     def id(self) -> int:
-        return self._playlist.id
+        return self._playlist_id
 
     def delete(self):
         import audio_manager
         audio_manager.live_player.LivePlayers.remove(self)
-        self._session.delete(self._playlist)
-        self._session.commit()
-        self._session.close()
+        session = database.db.session
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            delete()
+        session.commit()
 
     def _get_player(self):
         import audio_manager
-        return audio_manager.live_player.LivePlayers.get_player(self._playlist.id)
+        return audio_manager.live_player.LivePlayers.get_player(str(self._playlist_id))
 
     @property
     def state(self) -> database.LivePlayerState:
-        return self._playlist.state
+        return database.db.session.query(database.LivePlayer).get(self._playlist_id).state
 
     @state.setter
     def state(self, state: database.LivePlayerState):
-        self._playlist.state = state
-        self._session.commit()
+        session = database.db.session
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            update({database.LivePlayer.state: state})
+        session.commit()
         self._get_player().set_state(state)
         self._emit('player_state_' + str(self.id), state.name)
 
     @property
     def jingle_playlist(self) -> typing.Optional[playlist.Playlist]:
-        playlist_id = self._playlist.jingle_playlist
+        playlist_id = database.db.session.query(database.LivePlayer).get(self._playlist_id).jingle_playlist
         return None if not playlist_id else playlist.Playlist(playlist_id)
 
     @jingle_playlist.setter
     def jingle_playlist(self, playlist: playlist.Playlist):
-        if playlist is None:
-            self._playlist.jingle_playlist = None
-            self._emit('player_jingles_' + str(self.id), '')
-        else:
-            self._playlist.jingle_playlist = playlist.id
-            self._emit('player_jingles_' + str(self.id), playlist.id)
-        self._session.commit()
+        session = database.db.session
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            update({database.LivePlayer.jingle_playlist: None if playlist is None else playlist.id})
+        session.commit()
+        self._emit('player_jingles_' + str(self.id), '' if playlist is None else playlist.id)
 
     @property
     def jingle_count(self) -> int:
-        return self._playlist.jingle_count
+        return database.db.session.query(database.LivePlayer).get(self._playlist_id).jingle_count
 
     @jingle_count.setter
     def jingle_count(self, jingle_count: typing.Optional[int]):
-        self._playlist.jingle_count = jingle_count
+        session = database.db.session
+        update = {
+            database.LivePlayer.jingle_count: jingle_count
+        }
         if jingle_count is None:
-            self._playlist.jingle_plays = 0
-        self._session.commit()
+            update[database.LivePlayer.jingle_plays] = 0
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            update(update)
+        session.commit()
 
     @property
     def jingle_plays(self) -> int:
-        return self._playlist.jingle_plays
+        return database.db.session.query(database.LivePlayer).get(self._playlist_id).jingle_plays
 
     @jingle_plays.setter
     def jingle_plays(self, jingle_plays: int):
-        self._playlist.jingle_plays = jingle_plays
-        self._session.commit()
+        session = database.db.session
+        session.query(database.LivePlayer). \
+            filter(database.LivePlayer.id == self._playlist_id). \
+            update({database.LivePlayer.jingle_plays: jingle_plays})
+        session.commit()
 
     def current_track(self) -> typing.Optional[typing.Tuple[int, database.LivePlayerType]]:
-        query = self._session.query(database.LivePlayerTrack). \
+        query = database.db.session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
         track = query.first()
@@ -131,17 +145,18 @@ class LivePlayer(object):
         return track.track, track.type
 
     def remove_track(self):
-        query = self._session.query(database.LivePlayerTrack). \
+        session = database.db.session
+        query = session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
-        self._session.delete(query.first())
-        self._session.query(database.LivePlayerTrack). \
+        session.delete(query.first())
+        session.query(database.LivePlayerTrack). \
             update({'index': (database.LivePlayerTrack.index - 1)})
-        self._session.commit()
-        self._send_tracks()
+        session.commit()
+        self._send_tracks(session)
 
-    def _send_tracks(self):
-        query = self._session.query(database.LivePlayerTrack). \
+    def _send_tracks(self, session):
+        query = session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
         self._emit(
@@ -151,23 +166,24 @@ class LivePlayer(object):
 
     @property
     def tracks(self) -> typing.List[typing.Tuple[int, database.LivePlayerType]]:
-        query = self._session.query(database.LivePlayerTrack). \
+        query = database.db.session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index)
         return [(track.track, track.type) for track in query.all()]
 
     @tracks.setter
     def tracks(self, tracks: typing.List[typing.Tuple[int, database.LivePlayerType]]):
-        current_track = self._session.query(database.LivePlayerTrack). \
+        session = database.db.session
+        current_track = session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id). \
             order_by(database.LivePlayerTrack.index). \
             first()
-        query = self._session.query(database.LivePlayerTrack). \
+        query = session.query(database.LivePlayerTrack). \
             filter(database.LivePlayerTrack.playlist == self.id)
         query.delete()
         for index, (track, type_) in enumerate(tracks):
-            self._session.add(database.LivePlayerTrack(playlist=self.id, track=track, index=index, type=type_))
-        self._session.commit()
+            session.add(database.LivePlayerTrack(playlist=self.id, track=track, index=index, type=type_))
+        session.commit()
         if len(tracks) > 0 and (current_track is None or tracks[0][0] != current_track.track):
             self._get_player().set_track(tracks[0][0])
             self._emit('player_tracktime_' + str(self.id), 0)
@@ -184,7 +200,7 @@ class LivePlayer(object):
         Iterate over the tracks on a given page
         :return:  An iterator of the results on that page
         """
-        query = self._session.query(database.Track, database.PlaylistTrack). \
+        query = database.db.session.query(database.Track, database.PlaylistTrack). \
             filter(database.PlaylistTrack.playlist == self.id). \
             filter(database.Track.id == database.PlaylistTrack.track). \
             order_by(database.PlaylistTrack.index)

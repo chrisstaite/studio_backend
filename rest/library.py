@@ -1,6 +1,5 @@
 import os
 import typing
-import flask
 import mimetypes
 import flask
 import flask_restful.reqparse
@@ -137,7 +136,13 @@ class TrackInfo(flask_restful.Resource):
         :return:  The track information
         """
         track = library.Track(id)
-        return {'title': track.title, 'artist': track.artist, 'length': track.length}
+        last_play = track.last_play()
+        return {
+            'title': track.title,
+            'artist': track.artist,
+            'length': track.length,
+            'last_play': None if last_play is None else last_play.isoformat()
+        }
 
     def put(self, id: int) -> bool:
         """

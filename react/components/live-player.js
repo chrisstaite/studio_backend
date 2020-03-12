@@ -107,8 +107,13 @@ const PlaylistItem = React.forwardRef(
                 .then(track => { TrackCache[item.id] = track; return track; })
                 .then(track => { resolved(track); return track; })
                 .catch(e => console.error(e));
-            TrackCache[item.id] = promise
-            return () => abortController.abort();
+            TrackCache[item.id] = promise;
+            return () => {
+                abortController.abort();
+                if (TrackCache[item.id] instanceof Promise) {
+                    delete TrackCache[item.id];
+                }
+            }
         }
     }, [item.id]);
 

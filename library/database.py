@@ -30,7 +30,7 @@ class TrackPlay(db.Model):
     # The ID of the track
     track = db.Column(db.Integer, db.ForeignKey('track.id'), primary_key=True)
     # The time and date it was played
-    time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    time = db.Column(db.DateTime, default=datetime.datetime.utcnow, primary_key=True)
 
 
 class TrackTags(db.Model):
