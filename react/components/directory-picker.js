@@ -72,11 +72,14 @@ const Directory = ({ path, expandedList, expanded, setDirectory, ...props }) => 
                     if (directories.length == 0 && props.hasOwnProperty('setHasChildren')) {
                         props.setHasChildren(false);
                     }
+                    setLoaded(true);
                 })
                 .catch(e => console.error(e));
-            setLoaded(true);
         }
-        return () => abortController.abort();
+        return () => {
+            console.info('Abort');
+            abortController.abort();
+        }
     }, [path, loaded, expanded]);
 
     if (!loaded && expanded) {

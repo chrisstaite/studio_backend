@@ -52,9 +52,10 @@ class Mp3(callback.Callback):
                 except RuntimeError:
                     # If the encoder hasn't encoded anything, it's fine
                     pass
+                self._encoder = None
         self._input = None
         if source is not None:
-            if self._encoder is None or source.channels != self._channels:
+            if self._encoder is None:
                 try:
                     self._encoder = lameenc.Encoder()
                     self._encoder.set_channels(source.channels)
