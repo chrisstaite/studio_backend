@@ -93,7 +93,7 @@ class CreatedOutputs(flask_restful.Resource):
             elif isinstance(output.output, audio_manager.output.MultiplexedOutput):
                 ret['type'] = 'multiplex'
                 ret['parent_id'] = audio_manager.output.Outputs.get_output(output.output.parent).id
-            elif isinstance(output.output, stream_sink.Mp3Generator):
+            elif isinstance(output.output, stream_sink.AudioSession):
                 ret['type'] = 'browser'
             elif isinstance(output.output, audio.output_file.RollingFile):
                 ret['type'] = 'file'

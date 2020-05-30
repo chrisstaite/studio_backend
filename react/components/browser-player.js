@@ -1,51 +1,45 @@
 import React, { useState, useEffect } from 'react';
+import * as io from 'socket.io-client';
 
-const playWebAudio = uri => {
+const concat = (buffer1, buffer2) => {
+  var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+  tmp.set(new Uint8Array(buffer1), 0);
+  tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+  return tmp.buffer;
+};
+
+const playWebAudio = () => {
+    const socket = io('/audio');
     const context = new AudioContext();
 
-    const recursiveRead = reader => {
-        reader.read()
-            .then(({ done, value }) => {
-                if (done) {
-                    return;
-                }
-                context.decodeAudioData(value.buffer)
-                    .then(audioBuffer => {
-                        const source = context.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(context.destination);
-                        source.start();
-                    })
-                    .catch(e => console.info(e));
+    let existingBuffer = null;
+    const handleAudio = data => {
+        if (existingBuffer != null) {
+            data = concat(existingBuffer, data);
+        }
+        const errorData = data.slice(0);
+        context.decodeAudioData(data)
+            .then(audioBuffer => {
+                existingBuffer = null;
+                const source = context.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(context.destination);
+                source.start();
             })
-            .then(() => setTimeout(() => recursiveRead(reader), 0))
-            .catch(e => console.error(e));
+            .catch(() => {
+                existingBuffer = errorData;
+            });
     };
 
-    const abortController = new AbortController();
-    fetch(uri, {signal: abortController.signal})
-        .then(response => {
-            if (!response.ok) {
-                throw response;
-            }
-            return response;
-        })
-        .then(response => response.body.getReader())
-        .then(recursiveRead)
-        .catch(e => console.info(e));
-    return () => abortController.abort();
+    socket.emit('start_output', 'Browser');
+    socket.on('output', handleAudio);
+
+    return () => socket.disconnect();
 };
 
 const BrowserPlayer = () => {
-    const [ uri, setUri ] = useState('/audio/output_stream/Browser');
-
-    if (window.AudioContext !== undefined) {
-        useEffect(() => playWebAudio(uri), [uri]);
-        return ( <div /> );
-    }
-    return (
-        <audio src='' autoPlay />
-    );
+    useEffect(playWebAudio, []);
+    return ( <div /> );
 };
 
 export default BrowserPlayer;

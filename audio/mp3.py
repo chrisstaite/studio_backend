@@ -47,7 +47,11 @@ class Mp3(callback.Callback):
             self._input.remove_callback(self._input_callback)
         if self._encoder is not None:
             if source is not None and source.channels != self._channels:
-                self.notify_callbacks(self._encoder.flush())
+                try:
+                    self.notify_callbacks(self._encoder.flush())
+                except RuntimeError:
+                    # If the encoder hasn't encoded anything, it's fine
+                    pass
         self._input = None
         if source is not None:
             if self._encoder is None or source.channels != self._channels:

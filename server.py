@@ -25,7 +25,7 @@ class Server(object):
         """
         self._app = flask.Flask(__name__)
         self._app.config['SECRET_KEY'] = str(uuid.uuid4())
-        self._socketio = flask_socketio.SocketIO(self._app, async_mode='eventlet')
+        self._socketio = flask_socketio.SocketIO(self._app, binary=True, async_mode='eventlet')
         self._angular = None
         self._react = None
         with self._app.app_context():
@@ -52,7 +52,7 @@ class Server(object):
         import rest
         rest.audio_output.setup_api(api)
         rest.audio_input.setup_api(api)
-        rest.stream_sink.setup_api(api)
+        rest.stream_sink.setup_api(self._socketio)
         rest.audio_mix.setup_api(api)
         rest.library.setup_api(api)
         rest.live_player.setup_api(api)
