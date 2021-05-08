@@ -1,7 +1,7 @@
 audioread==2.1.8
 certifi==2020.4.5.1
 cffi==1.14.0
-eventlet==0.25.2
+eventlet==0.31.0
 eyeD3==0.9.5
 filetype==1.0.7
 Flask==1.1.2
