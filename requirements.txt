@@ -15,5 +15,5 @@ Flask-SQLAlchemy==2.4.3
 typing==3.7.4.1
 typing-extensions==3.7.4.2
 Werkzeug==1.0.1
-numpy==1.18.4
+numpy==1.22.0
 watchdog==0.10.2
